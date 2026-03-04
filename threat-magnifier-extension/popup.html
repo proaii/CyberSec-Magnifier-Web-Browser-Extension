@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            width: 280px;
+            padding: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: left;
+            background: #fdfdfd;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+
+        p.desc {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        button {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        button:hover {
+            background: #1976D2;
+        }
+
+        button.active {
+            background: #f44336;
+        }
+
+        button.active:hover {
+            background: #d32f2f;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #444;
+        }
+
+        .option-label input {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+        }
+
+        .option-desc {
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+            margin-left: 26px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>🔍 Threat Magnifier</h3>
+    <p class="desc">Hover over elements to analyze them.</p>
+
+    <button id="toggleBtn">Start Magnifier</button>
+
+    <div class="option-group">
+        <label class="option-label">
+            <input type="checkbox" id="previewToggle"> Show Website Previews
+        </label>
+        <div class="option-desc">Shows a small window of the destination when hovering over links.</div>
+    </div>
+
+    <div class="option-group">
+        <label class="option-label">
+            <input type="checkbox" id="verboseToggle"> Verbose Output
+        </label>
+        <div class="option-desc">Provides detailed explanations of why an element is considered a threat.</div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
