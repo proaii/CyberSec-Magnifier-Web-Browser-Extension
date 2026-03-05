@@ -58,6 +58,24 @@
             border: 1px solid #eee;
         }
 
+        .api-key-group {
+            margin-bottom: 15px;
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ffcc80;
+        }
+
+        .api-input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+
         .option-label {
             display: flex;
             align-items: center;
@@ -84,22 +102,24 @@
 
 <body>
     <h3>Threat Magnifier</h3>
-    <p class="desc">Hover over elements to analyze them.</p>
+    <p class="desc">What a Sigma Tool!</p>
 
     <button id="toggleBtn">Start Magnifier</button>
 
     <div class="option-group">
         <label class="option-label">
-            <input type="checkbox" id="previewToggle"> Show Website Previews
+            <input type="checkbox" id="advancedToggle"> Advanced Option
         </label>
-        <div class="option-desc">Shows a small window of the destination when hovering over links.</div>
+        <div class="option-desc">Shows detailed threat analysis and website previews. If disabled, only a color flag is
+            shown.</div>
     </div>
 
-    <div class="option-group">
-        <label class="option-label">
-            <input type="checkbox" id="verboseToggle"> Verbose Output
-        </label>
-        <div class="option-desc">Provides detailed explanations of why an element is considered a threat.</div>
+    <div class="api-key-group">
+        <label class="option-label" for="vtApiKey">VirusTotal API Key (Optional)</label>
+        <div class="option-desc" style="margin-left: 0;">Used to score external links in Advanced Mode.</div>
+        <input type="password" id="vtApiKey" class="api-input" placeholder="Enter API Key here...">
+        <button id="saveApiBtn" style="margin-top: 10px; margin-bottom: 0; padding: 8px; background: #FF9800;">Save
+            Key</button>
     </div>
 
     <script src="popup.js"></script>

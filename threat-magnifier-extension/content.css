@@ -106,3 +106,28 @@
     background-color: rgba(244, 67, 54, 0.2) !important;
     outline-offset: -1px;
 }
+
+/* Minimal Mode Flags */
+#threat-magnifier-tooltip.minimal-mode {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 0 !important;
+    border: 2px solid white !important;
+    background-color: transparent !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-safe {
+    background-color: #4CAF50 !important;
+    border-color: white !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-warning {
+    background-color: #FFC107 !important;
+    border-color: white !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-danger {
+    background-color: #F44336 !important;
+    border-color: white !important;
+}

@@ -1,15 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('toggleBtn');
-    const previewToggle = document.getElementById('previewToggle');
-    const verboseToggle = document.getElementById('verboseToggle');
+    const advancedToggle = document.getElementById('advancedToggle');
+    const apiInput = document.getElementById('vtApiKey');
+    const saveApiBtn = document.getElementById('saveApiBtn');
 
     // Load current state from browser storage
-    chrome.storage.local.get(['isActive', 'showPreviews', 'verboseMode'], (result) => {
+    chrome.storage.local.get(['isActive', 'advancedMode', 'vtApiKey'], (result) => {
         let active = !!result.isActive;
         updateUI(active);
 
-        previewToggle.checked = !!result.showPreviews;
-        verboseToggle.checked = !!result.verboseMode;
+        advancedToggle.checked = !!result.advancedMode;
+        if (result.vtApiKey) {
+            apiInput.value = result.vtApiKey;
+            saveApiBtn.textContent = "Saved";
+        }
     });
 
     // Notify content scripts of changes
@@ -32,17 +36,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Toggle logic for options
-    previewToggle.addEventListener('change', (e) => {
-        chrome.storage.local.set({ showPreviews: e.target.checked }, () => {
-            notifyContentScripts({ showPreviews: e.target.checked });
+    // Toggle logic for Advanced Option
+    advancedToggle.addEventListener('change', (e) => {
+        chrome.storage.local.set({ advancedMode: e.target.checked }, () => {
+            notifyContentScripts({ advancedMode: e.target.checked });
         });
     });
 
-    verboseToggle.addEventListener('change', (e) => {
-        chrome.storage.local.set({ verboseMode: e.target.checked }, () => {
-            notifyContentScripts({ verboseMode: e.target.checked });
+    // Save API Key
+    saveApiBtn.addEventListener('click', () => {
+        const key = apiInput.value.trim();
+        chrome.storage.local.set({ vtApiKey: key }, () => {
+            saveApiBtn.textContent = "Saved";
+            notifyContentScripts({ vtApiKey: key });
+            setTimeout(() => {
+                saveApiBtn.textContent = "Save Key";
+            }, 2000);
         });
+    });
+
+    // Reset button text on typing
+    apiInput.addEventListener('input', () => {
+        saveApiBtn.textContent = "Save Key";
     });
 
     function updateUI(active) {

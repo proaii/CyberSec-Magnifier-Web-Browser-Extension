@@ -1,13 +1,13 @@
 let isActive = false;
-let showPreviews = false;
-let verboseMode = false;
+let advancedMode = false;
+let vtApiKey = '';
 let tooltip = null;
 
 // Initialize state from storage when the script loads
-chrome.storage.local.get(['isActive', 'showPreviews', 'verboseMode'], (result) => {
+chrome.storage.local.get(['isActive', 'advancedMode', 'vtApiKey'], (result) => {
     isActive = !!result.isActive;
-    showPreviews = !!result.showPreviews;
-    verboseMode = !!result.verboseMode;
+    advancedMode = !!result.advancedMode;
+    vtApiKey = result.vtApiKey || '';
     if (isActive) {
         enableMagnifier();
     }
@@ -21,11 +21,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (isActive) enableMagnifier();
             else disableMagnifier();
         }
-        if (message.state.showPreviews !== undefined) {
-            showPreviews = message.state.showPreviews;
+        if (message.state.advancedMode !== undefined) {
+            advancedMode = message.state.advancedMode;
+            if (!advancedMode) {
+                const highlighted = document.querySelectorAll('[class*="threat-magnifier-highlight"]');
+                highlighted.forEach(el => {
+                    el.classList.remove('threat-magnifier-highlight-safe');
+                    el.classList.remove('threat-magnifier-highlight-warning');
+                    el.classList.remove('threat-magnifier-highlight-danger');
+                });
+            }
         }
-        if (message.state.verboseMode !== undefined) {
-            verboseMode = message.state.verboseMode;
+        if (message.state.vtApiKey !== undefined) {
+            vtApiKey = message.state.vtApiKey;
         }
     }
 });
@@ -47,33 +55,55 @@ function updateTooltip(e, status, analysis, urlPreview) {
     // Clear old classes and add new status class for styling
     tip.className = 'status-' + status;
 
-    // Build HTML content for the magnifying glass tooltip
-    let html = `<strong>Status: ${status.toUpperCase()}</strong><ul>`;
-    analysis.forEach(item => {
-        // item can be a string or an object { short, verbose }
-        let msg = (verboseMode && item.verbose) ? item.verbose : (item.short || item);
-        html += `<li>${msg}</li>`;
-    });
-    if (analysis.length === 0) {
-        let safeMsg = verboseMode ? "Looks safe. We couldn't find any obvious structural threats like hidden iframes, cross-origin forms, or dangerous inline scripts." : "Looks safe. No obvious structural threats detected.";
-        html += `<li>${safeMsg}</li>`;
-    }
-    html += `</ul>`;
+    if (!advancedMode) {
+        tip.classList.add('minimal-mode');
+        tip.innerHTML = '';
+        tip.style.display = 'block';
+    } else {
+        tip.classList.remove('minimal-mode');
 
-    // Add iframe preview if enabled and url is provided
-    if (showPreviews && urlPreview) {
-        // ensure urlPreview is a full URL
-        try {
-            new URL(urlPreview);
-            html += `<div class="preview-container">
-                        <span class="preview-label">Website Preview:</span>
-                        <iframe class="preview-iframe" src="${urlPreview}" sandbox=""></iframe>
-                    </div>`;
-        } catch (e) { }
-    }
+        // Build HTML content for the magnifying glass tooltip
+        let html = `<strong>Status: ${status.toUpperCase()}</strong><ul>`;
+        analysis.forEach(item => {
+            // item can be a string or an object { short, verbose }
+            let msg = item.short || item;
+            html += `<li>${msg}</li>`;
+        });
 
-    tip.innerHTML = html;
-    tip.style.display = 'block';
+        // Setup placeholder for VirusTotal results
+        let vtContainerId = `vt-result-${Date.now()}`;
+        if (urlPreview && vtApiKey) {
+            html += `<li id="${vtContainerId}"><em>Fetching VirusTotal report...</em></li>`;
+        } else if (urlPreview && !vtApiKey) {
+            html += `<li><em>VirusTotal API key missing. Add in options to score this link.</em></li>`;
+        }
+
+        if (analysis.length === 0) {
+            let safeMsg = "Looks safe. No obvious structural threats detected.";
+            html += `<li>${safeMsg}</li>`;
+        }
+        html += `</ul>`;
+
+        // Add iframe preview if url is provided (merged explicitly into pointing)
+        if (urlPreview) {
+            // ensure urlPreview is a full URL
+            try {
+                new URL(urlPreview);
+                html += `<div class="preview-container">
+                            <span class="preview-label">Website Preview:</span>
+                            <iframe class="preview-iframe" src="${urlPreview}" sandbox=""></iframe>
+                        </div>`;
+            } catch (e) { }
+        }
+
+        tip.innerHTML = html;
+        tip.style.display = 'block';
+
+        // Trigger asynchronous VirusTotal check if applicable
+        if (urlPreview && vtApiKey) {
+            fetchVirusTotalScore(urlPreview, vtContainerId, tip, status);
+        }
+    }
 
     // Position tooltip near the mouse pointer
     const offset = 15;
@@ -187,6 +217,70 @@ function analyzeElement(element) {
     return { status: 'danger', analysis: reasons, previewUrl };
 }
 
+async function fetchVirusTotalScore(url, containerId, tipElement, currentStatus) {
+    try {
+        // According to VT API v3 documentation
+        // First we need to get the URL identifier by base64url encoding it
+        const urlId = btoa(url).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+        const response = await fetch(`https://www.virustotal.com/api/v3/urls/${urlId}`, {
+            method: 'GET',
+            headers: {
+                'accept': 'application/json',
+                'x-apikey': vtApiKey
+            }
+        });
+
+        const container = document.getElementById(containerId);
+        if (!container) return; // Tooltip might have closed during fetch
+
+        if (response.ok) {
+            const data = await response.json();
+            const stats = data.data.attributes.last_analysis_stats;
+            const malicious = stats.malicious;
+            const suspicious = stats.suspicious;
+            const total = malicious + suspicious + stats.harmless + stats.undetected;
+
+            if (malicious > 0) {
+                container.innerHTML = `<strong>VirusTotal: ${malicious} malicious vendors found!</strong> (${malicious}/${total})`;
+                // Escalate status to danger if it wasn't already
+                if (currentStatus !== 'danger') {
+                    tipElement.className = 'status-danger';
+                    tipElement.querySelector('strong').textContent = 'Status: DANGER';
+                    if (currentHoverTarget) {
+                        currentHoverTarget.classList.remove('threat-magnifier-highlight-warning', 'threat-magnifier-highlight-safe');
+                        currentHoverTarget.classList.add('threat-magnifier-highlight-danger');
+                    }
+                }
+            } else if (suspicious > 0) {
+                container.innerHTML = `<strong>VirusTotal: ${suspicious} suspicious reports.</strong> (${suspicious}/${total})`;
+                if (currentStatus === 'safe') {
+                    tipElement.className = 'status-warning';
+                    tipElement.querySelector('strong').textContent = 'Status: WARNING';
+                    if (currentHoverTarget) {
+                        currentHoverTarget.classList.remove('threat-magnifier-highlight-safe');
+                        currentHoverTarget.classList.add('threat-magnifier-highlight-warning');
+                    }
+                }
+            } else {
+                container.innerHTML = `VirusTotal: Clean (${stats.harmless} vendors say harmless)`;
+            }
+        } else if (response.status === 404) {
+            // URL not found in VT database, could submit it but for hover we just say not scanned
+            container.innerHTML = `VirusTotal: No scan data available for this specific URL.`;
+        } else if (response.status === 401 || response.status === 403) {
+            container.innerHTML = `VirusTotal: Invalid API Key or Quota Exceeded.`;
+        } else {
+            container.innerHTML = `VirusTotal: Check failed (Status ${response.status}).`;
+        }
+    } catch (e) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `VirusTotal check failed to connect.`;
+        }
+    }
+}
+
 let currentHoverTarget = null;
 
 function optimizedHandleMouseOver(e) {
@@ -197,7 +291,9 @@ function optimizedHandleMouseOver(e) {
     if (currentHoverTarget !== target) {
         currentHoverTarget = target;
         const result = analyzeElement(target);
-        target.classList.add(`threat-magnifier-highlight-${result.status}`);
+        if (advancedMode) {
+            target.classList.add(`threat-magnifier-highlight-${result.status}`);
+        }
         updateTooltip(e, result.status, result.analysis, result.previewUrl);
     }
 }
