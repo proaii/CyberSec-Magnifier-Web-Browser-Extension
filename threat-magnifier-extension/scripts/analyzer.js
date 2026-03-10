@@ -3,6 +3,38 @@
 // Pure functions — no global state read at definition time, no DOM side-effects.
 // =============================================================================
 
+// ── Javascript URI deep scanner ───────────────────────────────────────────────
+function scanJavascriptURI(uri) {
+  if (!uri.trim().toLowerCase().startsWith("javascript:")) {
+    return { isSuspicious: false };
+  }
+
+  let payload = uri.trim().substring(11);
+  try {
+    payload = decodeURIComponent(payload);
+  } catch (e) {
+    return { isSuspicious: true, threats: ["Malformed URI encoding"], payload: uri };
+  }
+
+  const threatRules = [
+    { name: "XSS Execution Probe", regex: /alert\(|confirm\(|prompt\(/i },
+    { name: "Cookie Theft", regex: /document\.cookie/i },
+    { name: "Local Storage Access", regex: /localStorage|sessionStorage/i },
+    { name: "Data Exfiltration", regex: /fetch\(|XMLHttpRequest|webhook/i },
+    { name: "Code Execution/Obfuscation", regex: /eval\(|setTimeout\(|atob\(|btoa\(/i },
+    { name: "Page Redirection", regex: /window\.location|document\.location/i },
+  ];
+
+  const matchedThreats = threatRules
+    .filter((r) => r.regex.test(payload))
+    .map((r) => r.name);
+
+  if (matchedThreats.length > 0) {
+    return { isSuspicious: true, threats: matchedThreats, payload };
+  }
+  return { isSuspicious: false, threats: [], payload };
+}
+
 // ── Internal: analyse a SINGLE element only ───────────────────────────────────
 function _analyseSingle(element) {
   let reasons = [];
@@ -14,16 +46,36 @@ function _analyseSingle(element) {
     const href = element.getAttribute("href") || "";
     previewUrl = element.href; // absolute URL
 
-    // javascript: URI
-    if (href.startsWith("javascript:")) {
-      reasons.push({
-        short: tmText("reasonLinkInlineJsShort", "Contains inline JavaScript execution in link."),
-        verbose: tmText(
-          "reasonLinkInlineJsVerbose",
-          "Inline JS (`javascript:`) can be used by attackers to run malicious scripts (XSS) when you click the link.",
-        ),
-      });
-      score = Math.max(score, 2);
+    // javascript: URI — deep static analysis
+    if (href.trim().toLowerCase().startsWith("javascript:")) {
+      const jsReport = scanJavascriptURI(href);
+      const payload = (jsReport.payload || "").trim();
+
+      // Known-safe patterns: void(0), empty payload, bare semicolons, return false
+      const isSafePattern = /^(void\s*\(0\)|;*|return\s+false;?)$/i.test(payload);
+
+      if (isSafePattern) {
+        // Safe javascript: usage — do not flag at all
+      } else if (jsReport.isSuspicious && jsReport.threats && jsReport.threats.length > 0) {
+        // Confirmed threat signatures found — DANGER
+        jsReport.threats.forEach((threat) => {
+          reasons.push({
+            short: `⚠ javascript: URI — ${threat}`,
+            verbose: `Payload: ${payload.slice(0, 120)}`,
+          });
+        });
+        score = Math.max(score, 2);
+      } else {
+        // Unknown javascript: payload — flag as WARNING only
+        reasons.push({
+          short: tmText("reasonLinkInlineJsShort", "Contains inline JavaScript execution in link."),
+          verbose: tmText(
+            "reasonLinkInlineJsVerbose",
+            "Inline JS (`javascript:`) can be used by attackers to run malicious scripts (XSS) when you click the link.",
+          ),
+        });
+        score = Math.max(score, 1);
+      }
       previewUrl = null;
 
       // Plain HTTP
@@ -38,19 +90,25 @@ function _analyseSingle(element) {
       score = Math.max(score, 1);
     }
 
-    // Raw IP address
-    if (/^https?:\/\/\d{1,3}(\.\d{1,3}){3}/.test(element.href)) {
-      reasons.push({
-        short: tmText(
-          "reasonRawIpShort",
-          "Link points to a raw IP address instead of a domain name.",
-        ),
-        verbose: tmText(
-          "reasonRawIpVerbose",
-          "Legitimate websites almost never use raw IPs for user-facing pages — a common phishing and malware hosting technique.",
-        ),
-      });
-      score = Math.max(score, 2);
+    // Raw IP address (skip localhost/dev server IPs)
+    const ipMatch = element.href.match(/^https?:\/\/(\d{1,3}(\.\d{1,3}){3})/);
+    if (ipMatch) {
+      const ip = ipMatch[1];
+      const isLocalhost = ip === "127.0.0.1" || ip === "0.0.0.0" || ip.startsWith("192.168.") === false && ip === ip; // keep
+      const isLoopback = ip === "127.0.0.1" || ip === "0.0.0.0";
+      if (!isLoopback) {
+        reasons.push({
+          short: tmText(
+            "reasonRawIpShort",
+            "Link points to a raw IP address instead of a domain name.",
+          ),
+          verbose: tmText(
+            "reasonRawIpVerbose",
+            "Legitimate websites almost never use raw IPs for user-facing pages — a common phishing and malware hosting technique.",
+          ),
+        });
+        score = Math.max(score, 2);
+      }
     }
 
     // Punycode / Homograph attack
@@ -285,7 +343,9 @@ function _analyseSingle(element) {
 
   // ── 3. Password field ─────────────────────────────────────────────────────
   if (element.tagName === "INPUT" && element.type === "password") {
-    if (window.location.protocol !== "https:") {
+    const hostname = window.location.hostname;
+    const isLocalDev = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "";
+    if (window.location.protocol !== "https:" && !isLocalDev) {
       reasons.push({
         short: tmText(
           "reasonPasswordHttpShort",
@@ -384,25 +444,40 @@ function _analyseSingle(element) {
   return { status: "danger", analysis: reasons, previewUrl };
 }
 
-// ── Public: scan element + ancestors + descendants, return worst threat ────────
+// ── Public: scan element + nearest meaningful ancestor + direct children ───────
 function analyzeElement(element) {
   const candidates = new Set();
 
   // 1. The element itself
   candidates.add(element);
 
-  // 2. Walk UP ancestors (up to 5 levels) — catches <a> wrapping a hovered inner element
+  // 2. Walk UP — find NEAREST <a> or <form> wrapping the hovered element.
+  //    Stop as soon as one is found (don't accumulate all 5 levels).
   let ancestor = element.parentElement;
-  for (let i = 0; i < 5 && ancestor; i++) {
-    candidates.add(ancestor);
+  while (ancestor && ancestor !== document.body) {
+    const tag = ancestor.tagName;
+    if (tag === "A" || tag === "FORM") {
+      candidates.add(ancestor);
+      break; // Stop at first meaningful ancestor
+    }
     ancestor = ancestor.parentElement;
   }
 
-  // 3. Walk DOWN descendants — catches inner <a> tags inside hovered buttons/divs
-  const innerEls = element.querySelectorAll(
-    'a[href], form, iframe, input[type="password"], script, base'
-  );
-  innerEls.forEach((el) => candidates.add(el));
+  // 3. Walk DOWN — only DIRECT children (not deep descendants).
+  //    This catches an <a> immediately inside a hovered button/div.
+  for (const child of element.children) {
+    const tag = child.tagName;
+    if (
+      tag === "A" ||
+      tag === "FORM" ||
+      tag === "IFRAME" ||
+      tag === "SCRIPT" ||
+      tag === "BASE" ||
+      (tag === "INPUT" && child.type === "password")
+    ) {
+      candidates.add(child);
+    }
+  }
 
   // 4. Analyse each candidate, merge and prioritise worst threat
   let bestScore = 0;
@@ -417,7 +492,6 @@ function analyzeElement(element) {
       bestReasons = result.analysis;
       bestPreviewUrl = result.previewUrl;
     } else if (s === bestScore && result.analysis.length > bestReasons.length) {
-      // Same level but more reasons — prefer the richer result
       bestReasons = result.analysis;
       if (result.previewUrl) bestPreviewUrl = result.previewUrl;
     }
