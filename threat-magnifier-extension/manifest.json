@@ -13,11 +13,18 @@
       "matches": ["<all_urls>"],
       "css": ["content.css"],
       "js": [
+        "i18n-utils.js",
         "scripts/api.js",
         "scripts/analyzer.js",
         "scripts/ui.js",
         "content.js"
       ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["i18n/*.json"],
+      "matches": ["<all_urls>"]
     }
   ],
   "browser_specific_settings": {

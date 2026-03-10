@@ -20,12 +20,19 @@ function showBlockWarning(anchor) {
   removeBlockWarning();
   const banner = document.createElement("div");
   banner.id = "threat-magnifier-block-warning";
+  const title = tmText("blockedTitle", "Threat Magnifier blocked this link!");
+  const desc = tmText(
+    "blockedDesc",
+    'This link was classified as dangerous. Click "Open Anyway" if you trust it.',
+  );
+  const okText = tmText("blockOk", "OK");
+  const proceedText = tmText("blockProceed", "Open Anyway");
   banner.innerHTML =
-    "<strong>\u26A0\uFE0F Threat Magnifier blocked this link!</strong>" +
-    "<span>This link was classified as <em>dangerous</em>. Click \u201COpen Anyway\u201D if you trust it.</span>" +
+    `<strong>\u26A0\uFE0F ${title}</strong>` +
+    `<span>${desc}</span>` +
     '<div class="tm-block-actions">' +
-    '<button id="tm-block-dismiss">OK</button>' +
-    '<button id="tm-block-proceed">Open Anyway</button>' +
+    `<button id="tm-block-dismiss">${okText}</button>` +
+    `<button id="tm-block-proceed">${proceedText}</button>` +
     "</div>";
   document.body.appendChild(banner);
 
@@ -71,7 +78,8 @@ function updateTooltip(e, status, analysis, urlPreview) {
     tip.classList.remove("minimal-mode");
 
     // Build analysis list
-    let html = `<strong>Status: ${status.toUpperCase()}</strong><ul>`;
+    const statusTitle = tmText("statusTitle", "Status");
+    let html = `<strong>${statusTitle}: ${tmStatusLabel(status)}</strong><ul>`;
     analysis.forEach((item) => {
       html += `<li>${item.short || item}</li>`;
     });
@@ -79,13 +87,13 @@ function updateTooltip(e, status, analysis, urlPreview) {
     // VirusTotal inline result placeholder
     const vtContainerId = `vt-result-${Date.now()}`;
     if (urlPreview && vtApiKey) {
-      html += `<li id="${vtContainerId}"><em>Fetching VirusTotal report...</em></li>`;
+      html += `<li id="${vtContainerId}"><em>${tmText("vtFetching", "Fetching VirusTotal report...")}</em></li>`;
     } else if (urlPreview && !vtApiKey) {
-      html += `<li><em>VirusTotal API key missing. Add it in options to score this link.</em></li>`;
+      html += `<li><em>${tmText("vtKeyMissing", "VirusTotal API key missing. Add it in options to score this link.")}</em></li>`;
     }
 
     if (analysis.length === 0) {
-      html += `<li>Looks safe. No obvious structural threats detected.</li>`;
+      html += `<li>${tmText("safeNoThreat", "Looks safe. No obvious structural threats detected.")}</li>`;
     }
     html += `</ul>`;
 
@@ -96,7 +104,7 @@ function updateTooltip(e, status, analysis, urlPreview) {
         const vtUrl =
           "https://www.virustotal.com/gui/search/" +
           encodeURIComponent(urlPreview);
-        html += `<a class="vt-link" href="${vtUrl}" target="_blank" rel="noopener noreferrer">🔍 Check on VirusTotal ↗</a>`;
+        html += `<a class="vt-link" href="${vtUrl}" target="_blank" rel="noopener noreferrer">🔍 ${tmText("vtCheckLink", "Check on VirusTotal")} ↗</a>`;
       } catch (ex) {}
     }
 
@@ -105,7 +113,7 @@ function updateTooltip(e, status, analysis, urlPreview) {
       try {
         new URL(urlPreview);
         html += `<div class="preview-container">
-                            <span class="preview-label">Website Preview:</span>
+                            <span class="preview-label">${tmText("websitePreview", "Website Preview:")}</span>
                             <iframe class="preview-iframe" src="${urlPreview}" sandbox=""></iframe>
                          </div>`;
       } catch (ex) {}

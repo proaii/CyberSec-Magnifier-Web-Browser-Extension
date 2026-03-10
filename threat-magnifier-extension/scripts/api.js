@@ -39,10 +39,13 @@ async function fetchVirusTotalScore(
       const total = malicious + suspicious + stats.harmless + stats.undetected;
 
       if (malicious > 0) {
-        container.innerHTML = `<strong>VirusTotal: ${malicious} malicious vendors found!</strong> (${malicious}/${total})`;
+        container.innerHTML = `<strong>${tmFormat(tmText("vtMalicious", "VirusTotal: {count} malicious vendors found! ({ratio})"), {
+          count: malicious,
+          ratio: `${malicious}/${total}`,
+        })}</strong>`;
         if (currentStatus !== "danger") {
           tipElement.className = "status-danger";
-          tipElement.querySelector("strong").textContent = "Status: DANGER";
+          tipElement.querySelector("strong").textContent = `${tmText("statusTitle", "Status")}: ${tmStatusLabel("danger")}`;
           if (currentHoverTarget) {
             currentHoverTarget.classList.remove(
               "threat-magnifier-highlight-warning",
@@ -54,10 +57,13 @@ async function fetchVirusTotalScore(
           }
         }
       } else if (suspicious > 0) {
-        container.innerHTML = `<strong>VirusTotal: ${suspicious} suspicious reports.</strong> (${suspicious}/${total})`;
+        container.innerHTML = `<strong>${tmFormat(tmText("vtSuspicious", "VirusTotal: {count} suspicious reports. ({ratio})"), {
+          count: suspicious,
+          ratio: `${suspicious}/${total}`,
+        })}</strong>`;
         if (currentStatus === "safe") {
           tipElement.className = "status-warning";
-          tipElement.querySelector("strong").textContent = "Status: WARNING";
+          tipElement.querySelector("strong").textContent = `${tmText("statusTitle", "Status")}: ${tmStatusLabel("warning")}`;
           if (currentHoverTarget) {
             currentHoverTarget.classList.remove(
               "threat-magnifier-highlight-safe",
@@ -68,17 +74,29 @@ async function fetchVirusTotalScore(
           }
         }
       } else {
-        container.innerHTML = `VirusTotal: Clean (${stats.harmless} vendors say harmless)`;
+        container.innerHTML = tmFormat(
+          tmText("vtClean", "VirusTotal: Clean ({count} vendors say harmless)"),
+          { count: stats.harmless },
+        );
       }
     } else if (response.status === 404) {
-      container.innerHTML = `VirusTotal: No scan data available for this specific URL.`;
+      container.innerHTML = tmText(
+        "vtNoData",
+        "VirusTotal: No scan data available for this specific URL.",
+      );
     } else if (response.status === 401 || response.status === 403) {
-      container.innerHTML = `VirusTotal: Invalid API Key or Quota Exceeded.`;
+      container.innerHTML = tmText(
+        "vtInvalidKey",
+        "VirusTotal: Invalid API Key or Quota Exceeded.",
+      );
     } else {
-      container.innerHTML = `VirusTotal: Check failed (Status ${response.status}).`;
+      container.innerHTML = tmFormat(
+        tmText("vtCheckFailed", "VirusTotal: Check failed (Status {status})."),
+        { status: response.status },
+      );
     }
   } catch (e) {
     const container = document.getElementById(containerId);
-    if (container) container.innerHTML = `VirusTotal check failed to connect.`;
+    if (container) container.innerHTML = tmText("vtConnectFailed", "VirusTotal check failed to connect.");
   }
 }

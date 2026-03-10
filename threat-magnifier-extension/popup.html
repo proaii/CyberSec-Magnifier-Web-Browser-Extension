@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
     <style>
         body {
             width: 280px;
@@ -9,6 +10,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: left;
             background: #fdfdfd;
+            position: relative;
         }
 
         h3 {
@@ -97,39 +99,138 @@
             margin-top: 4px;
             margin-left: 26px;
         }
+
+        .language-corner {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .language-switch {
+            position: relative;
+            display: inline-block;
+            width: 62px;
+            height: 24px;
+        }
+
+        .language-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .language-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #b0bec5;
+            transition: .2s;
+            border-radius: 24px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            overflow: hidden;
+        }
+
+        .language-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 30px;
+            left: 1px;
+            top: 1px;
+            background-color: #fff;
+            transition: .2s;
+            border-radius: 14px;
+            z-index: 3;
+        }
+
+        .switch-label-en,
+        .switch-label-th {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .switch-label-en {
+            left: 9px;
+        }
+
+        .switch-label-th {
+            right: 9px;
+            opacity: 0.7;
+        }
+
+        .language-switch input:checked+.language-slider {
+            background-color: #90a4ae;
+        }
+
+        .language-switch input:checked+.language-slider:before {
+            transform: translateX(30px);
+        }
+
+        .language-switch input:checked+.language-slider .switch-label-en {
+            opacity: 0.7;
+        }
+
+        .language-switch input:checked+.language-slider .switch-label-th {
+            opacity: 1;
+        }
     </style>
 </head>
 
 <body>
-    <h3>Threat Magnifier</h3>
-    <p class="desc">What a Sigma Tool!</p>
+    <h3 id="titleText">Threat Magnifier</h3>
+    <p class="desc" id="descText">What a Sigma Tool!</p>
 
     <button id="toggleBtn">Start Magnifier</button>
 
+    <div class="language-corner">
+        <label class="language-switch" for="languageToggle">
+            <input type="checkbox" id="languageToggle">
+            <span class="language-slider">
+                <span class="switch-label-en">EN</span>
+                <span class="switch-label-th">TH</span>
+            </span>
+        </label>
+    </div>
+
     <div class="option-group">
         <label class="option-label">
-            <input type="checkbox" id="advancedToggle"> Advanced Option
+            <input type="checkbox" id="advancedToggle">
+            <span id="advancedLabel">Advanced Option</span>
         </label>
-        <div class="option-desc">Shows detailed threat analysis and website previews. If disabled, only a color flag is
+        <div class="option-desc" id="advancedDesc">Shows detailed threat analysis and website previews. If disabled, only a color flag is
             shown.</div>
     </div>
 
     <div class="option-group">
         <label class="option-label">
-            <input type="checkbox" id="blockDangerToggle" checked> Block Dangerous Links
+            <input type="checkbox" id="blockDangerToggle" checked>
+            <span id="blockDangerLabel">Block Dangerous Links</span>
         </label>
-        <div class="option-desc">Prevents clicking links classified as dangerous. A warning will appear with an option
+        <div class="option-desc" id="blockDangerDesc">Prevents clicking links classified as dangerous. A warning will appear with an option
             to proceed anyway.</div>
     </div>
 
     <div class="api-key-group">
-        <label class="option-label" for="vtApiKey">VirusTotal API Key (Optional)</label>
-        <div class="option-desc" style="margin-left: 0;">Used to score external links in Advanced Mode.</div>
+        <label class="option-label" for="vtApiKey" id="apiLabel">VirusTotal API Key (Optional)</label>
+        <div class="option-desc" style="margin-left: 0;" id="apiDesc">Used to score external links in Advanced Mode.</div>
         <input type="password" id="vtApiKey" class="api-input" placeholder="Enter API Key here...">
         <button id="saveApiBtn" style="margin-top: 10px; margin-bottom: 0; padding: 8px; background: #FF9800;">Save
             Key</button>
     </div>
 
+    <script src="i18n-utils.js"></script>
     <script src="popup.js"></script>
 </body>
 

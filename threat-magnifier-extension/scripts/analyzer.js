@@ -16,9 +16,11 @@ function analyzeElement(element) {
     // javascript: URI
     if (href.startsWith("javascript:")) {
       reasons.push({
-        short: "Contains inline JavaScript execution in link.",
-        verbose:
+        short: tmText("reasonLinkInlineJsShort", "Contains inline JavaScript execution in link."),
+        verbose: tmText(
+          "reasonLinkInlineJsVerbose",
           "Inline JS (`javascript:`) can be used by attackers to run malicious scripts (XSS) when you click the link.",
+        ),
       });
       score = Math.max(score, 2);
       previewUrl = null;
@@ -26,9 +28,11 @@ function analyzeElement(element) {
       // Plain HTTP
     } else if (href.startsWith("http://")) {
       reasons.push({
-        short: "Link uses insecure HTTP protocol.",
-        verbose:
+        short: tmText("reasonInsecureHttpShort", "Link uses insecure HTTP protocol."),
+        verbose: tmText(
+          "reasonInsecureHttpVerbose",
           "Data sent over this connection is unencrypted and can be intercepted by third parties.",
+        ),
       });
       score = Math.max(score, 1);
     }
@@ -36,9 +40,14 @@ function analyzeElement(element) {
     // Raw IP address
     if (/^https?:\/\/\d{1,3}(\.\d{1,3}){3}/.test(element.href)) {
       reasons.push({
-        short: "Link points to a raw IP address instead of a domain name.",
-        verbose:
+        short: tmText(
+          "reasonRawIpShort",
+          "Link points to a raw IP address instead of a domain name.",
+        ),
+        verbose: tmText(
+          "reasonRawIpVerbose",
           "Legitimate websites almost never use raw IPs for user-facing pages — a common phishing and malware hosting technique.",
+        ),
       });
       score = Math.max(score, 2);
     }
@@ -46,10 +55,14 @@ function analyzeElement(element) {
     // Punycode / Homograph attack
     if (/xn--/.test(element.href)) {
       reasons.push({
-        short:
+        short: tmText(
+          "reasonPunycodeShort",
           "Domain uses Punycode encoding (possible homograph/look-alike attack).",
-        verbose:
+        ),
+        verbose: tmText(
+          "reasonPunycodeVerbose",
           "e.g. xn--pple-43d.com can look identical to apple.com using Cyrillic characters. Attackers register visually identical domains to steal credentials.",
+        ),
       });
       score = Math.max(score, 2);
     }
@@ -61,10 +74,14 @@ function analyzeElement(element) {
       )
     ) {
       reasons.push({
-        short:
+        short: tmText(
+          "reasonDangerousFileShort",
           "Link downloads a potentially dangerous executable or script file.",
-        verbose:
+        ),
+        verbose: tmText(
+          "reasonDangerousFileVerbose",
           "This link points to a file with a dangerous extension (.exe, .bat, .ps1, .vbs, .msi, etc.) that could be malware or ransomware.",
+        ),
       });
       score = Math.max(score, 2);
       previewUrl = null;
@@ -73,9 +90,14 @@ function analyzeElement(element) {
     // Data URI
     if (href.startsWith("data:")) {
       reasons.push({
-        short: "Link uses a Data URI — commonly used in phishing attacks.",
-        verbose:
+        short: tmText(
+          "reasonDataUriShort",
+          "Link uses a Data URI — commonly used in phishing attacks.",
+        ),
+        verbose: tmText(
+          "reasonDataUriVerbose",
           "`data:` URIs can embed an entire web page in the URL. Attackers use them to create fake login pages that bypass domain-based security checks.",
+        ),
       });
       score = Math.max(score, 2);
       previewUrl = null;
@@ -89,8 +111,14 @@ function analyzeElement(element) {
         href.startsWith("http")
       ) {
         reasons.push({
-          short: `External link (goes to: ${url.hostname}).`,
-          verbose: `Be careful clicking links that take you away from the current website — they could be phishing attempts.`,
+          short: tmFormat(
+            tmText("reasonExternalLinkShort", "External link (goes to: {host})."),
+            { host: url.hostname },
+          ),
+          verbose: tmText(
+            "reasonExternalLinkVerbose",
+            "Be careful clicking links that take you away from the current website — they could be phishing attempts.",
+          ),
         });
         score = Math.max(score, 1);
       }
@@ -118,8 +146,17 @@ function analyzeElement(element) {
         for (const [brand, trueDomain] of Object.entries(spoofBrands)) {
           if (hn.includes(brand) && !hn.endsWith(trueDomain)) {
             reasons.push({
-              short: `Domain contains "${brand}" but is not ${trueDomain} — possible brand spoofing.`,
-              verbose: `Attackers register lookalike domains (e.g. paypal-secure.net) to impersonate trusted brands and steal credentials.`,
+              short: tmFormat(
+                tmText(
+                  "reasonSpoofShort",
+                  'Domain contains "{brand}" but is not {domain} — possible brand spoofing.',
+                ),
+                { brand, domain: trueDomain },
+              ),
+              verbose: tmText(
+                "reasonSpoofVerbose",
+                "Attackers register lookalike domains (e.g. paypal-secure.net) to impersonate trusted brands and steal credentials.",
+              ),
             });
             score = Math.max(score, 2);
             break;
@@ -155,8 +192,17 @@ function analyzeElement(element) {
               redirectTarget.hostname !== window.location.hostname
             ) {
               reasons.push({
-                short: `Possible open redirect — "${param}" parameter leads to ${redirectTarget.hostname}.`,
-                verbose: `Attackers exploit open redirects to make malicious links appear to originate from a trusted site.`,
+                short: tmFormat(
+                  tmText(
+                    "reasonOpenRedirectShort",
+                    'Possible open redirect — "{param}" parameter leads to {host}.',
+                  ),
+                  { param, host: redirectTarget.hostname },
+                ),
+                verbose: tmText(
+                  "reasonOpenRedirectVerbose",
+                  "Attackers exploit open redirects to make malicious links appear to originate from a trusted site.",
+                ),
               });
               score = Math.max(score, 1);
             }
@@ -170,10 +216,14 @@ function analyzeElement(element) {
       const rel = element.getAttribute("rel") || "";
       if (!rel.includes("noopener") && !rel.includes("noreferrer")) {
         reasons.push({
-          short:
+          short: tmText(
+            "reasonNoNoopenerShort",
             'Opens in new tab without rel="noopener" — risk of reverse tabnapping.',
-          verbose:
+          ),
+          verbose: tmText(
+            "reasonNoNoopenerVerbose",
             "The opened page can access window.opener and silently redirect this page to a phishing site (reverse tabnapping attack).",
+          ),
         });
         score = Math.max(score, 1);
       }
@@ -183,9 +233,11 @@ function analyzeElement(element) {
     const style = window.getComputedStyle(element);
     if (style.display === "none" || style.visibility === "hidden") {
       reasons.push({
-        short: "Link is hidden — could be an invisible trap.",
-        verbose:
+        short: tmText("reasonHiddenLinkShort", "Link is hidden — could be an invisible trap."),
+        verbose: tmText(
+          "reasonHiddenLinkVerbose",
           "Attackers hide links to manipulate search rankings or overlay invisible links over trusted buttons to steal clicks.",
+        ),
       });
       score = Math.max(score, 2);
       previewUrl = null;
@@ -198,9 +250,11 @@ function analyzeElement(element) {
     const action = form.getAttribute("action") || "";
     if (action.startsWith("http://")) {
       reasons.push({
-        short: "Form submits data insecurely (HTTP).",
-        verbose:
+        short: tmText("reasonFormHttpShort", "Form submits data insecurely (HTTP)."),
+        verbose: tmText(
+          "reasonFormHttpVerbose",
           "Any information entered (passwords, emails, credit cards) can be read by anyone monitoring the network!",
+        ),
       });
       score = Math.max(score, 2);
     }
@@ -211,8 +265,17 @@ function analyzeElement(element) {
         actionUrl.hostname !== ""
       ) {
         reasons.push({
-          short: `Form submits data to a third-party domain (${actionUrl.hostname}).`,
-          verbose: `This is highly suspicious for login forms and often indicates a phishing site designed to steal credentials.`,
+          short: tmFormat(
+            tmText(
+              "reasonFormThirdPartyShort",
+              "Form submits data to a third-party domain ({host}).",
+            ),
+            { host: actionUrl.hostname },
+          ),
+          verbose: tmText(
+            "reasonFormThirdPartyVerbose",
+            "This is highly suspicious for login forms and often indicates a phishing site designed to steal credentials.",
+          ),
         });
         score = Math.max(score, 2);
       }
@@ -223,9 +286,14 @@ function analyzeElement(element) {
   if (element.tagName === "INPUT" && element.type === "password") {
     if (window.location.protocol !== "https:") {
       reasons.push({
-        short: "Password input on an insecure HTTP page!",
-        verbose:
+        short: tmText(
+          "reasonPasswordHttpShort",
+          "Password input on an insecure HTTP page!",
+        ),
+        verbose: tmText(
+          "reasonPasswordHttpVerbose",
           "Entering passwords on non-HTTPS connections is extremely dangerous — the password traverses the web completely unprotected.",
+        ),
       });
       score = Math.max(score, 2);
     }
@@ -234,9 +302,14 @@ function analyzeElement(element) {
   // ── 4. Iframe ─────────────────────────────────────────────────────────────
   if (element.tagName === "IFRAME") {
     reasons.push({
-      short: "Embedded iframe — can hide phishing pages or malicious ads.",
-      verbose:
+      short: tmText(
+        "reasonIframeShort",
+        "Embedded iframe — can hide phishing pages or malicious ads.",
+      ),
+      verbose: tmText(
+        "reasonIframeVerbose",
         "Attackers use iframes to load invisible malicious ads or credential-stealing prompts onto a benign page.",
+      ),
     });
     score = Math.max(score, 1);
   }
@@ -249,18 +322,31 @@ function analyzeElement(element) {
         const scriptUrl = new URL(src, window.location.origin);
         if (scriptUrl.hostname !== window.location.hostname) {
           reasons.push({
-            short: `External script loaded from ${scriptUrl.hostname}.`,
-            verbose: `Third-party scripts have full access to this page and can steal cookies, hijack sessions, or log keystrokes.`,
+            short: tmFormat(
+              tmText(
+                "reasonExternalScriptShort",
+                "External script loaded from {host}.",
+              ),
+              { host: scriptUrl.hostname },
+            ),
+            verbose: tmText(
+              "reasonExternalScriptVerbose",
+              "Third-party scripts have full access to this page and can steal cookies, hijack sessions, or log keystrokes.",
+            ),
           });
           score = Math.max(score, 1);
         }
       } catch (e) {}
     } else {
       reasons.push({
-        short:
+        short: tmText(
+          "reasonInlineScriptShort",
           "Inline <script> tag — executes JavaScript directly on this page.",
-        verbose:
+        ),
+        verbose: tmText(
+          "reasonInlineScriptVerbose",
           "Inline scripts can indicate injected malicious code (XSS) designed to steal cookies or session tokens.",
+        ),
       });
       score = Math.max(score, 1);
     }
@@ -274,8 +360,17 @@ function analyzeElement(element) {
         const baseUrl = new URL(baseHref, window.location.origin);
         if (baseUrl.hostname !== window.location.hostname) {
           reasons.push({
-            short: `<base> tag redirects all relative URLs to ${baseUrl.hostname}.`,
-            verbose: `Every relative link and resource on the page resolves to that external domain — used to hijack navigation and steal credentials.`,
+            short: tmFormat(
+              tmText(
+                "reasonBaseTagShort",
+                "<base> tag redirects all relative URLs to {host}.",
+              ),
+              { host: baseUrl.hostname },
+            ),
+            verbose: tmText(
+              "reasonBaseTagVerbose",
+              "Every relative link and resource on the page resolves to that external domain — used to hijack navigation and steal credentials.",
+            ),
           });
           score = Math.max(score, 2);
         }
