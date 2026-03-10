@@ -1,17 +1,25 @@
 {
   "manifest_version": 3,
   "name": "Threat Magnifier",
-  "version": "1.0",
+  "version": "2.0",
   "description": "Like a magnifying glass, point at web components to see if they are a potential threat.",
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": ["storage"],
-  "host_permissions": ["*://*.virustotal.com/*"],
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.virustotal.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "content.css"
+      ],
       "js": [
         "i18n-utils.js",
         "scripts/api.js",
@@ -23,8 +31,12 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["i18n/*.json"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "i18n/*.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "browser_specific_settings": {

@@ -1,7 +1,7 @@
 {
   "popup": {
-    "title": "Threat Magnifier",
-    "description": "What a Sigma Tool!",
+    "title": "Threat Magnifier 2.0",
+    "description": "ช่างเป็นเครื่องมือที่ ซิกม่า!",
     "startButton": "เริ่ม Magnifier",
     "stopButton": "หยุด Magnifier",
     "languageLabel": "ภาษา",

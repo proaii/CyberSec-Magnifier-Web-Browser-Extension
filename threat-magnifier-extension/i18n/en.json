@@ -1,6 +1,6 @@
 {
   "popup": {
-    "title": "Threat Magnifier",
+    "title": "Threat Magnifier 2.0",
     "description": "What a Sigma Tool!",
     "startButton": "Start Magnifier",
     "stopButton": "Stop Magnifier",
@@ -21,9 +21,9 @@
     "statusWarning": "WARNING",
     "statusDanger": "DANGER",
     "blockedTitle": "Threat Magnifier blocked this link!",
-    "blockedDesc": "This link was classified as dangerous. Click \"Open Anyway\" if you trust it.",
-    "blockOk": "OK",
-    "blockProceed": "Open Anyway",
+    "blockedDesc": "This link was classified as dangerous. Click \"Continue Anyway\" if you trust it.",
+    "blockOk": "Go Back",
+    "blockProceed": "Continue Anyway",
     "vtFetching": "Fetching VirusTotal report...",
     "vtKeyMissing": "VirusTotal API key missing. Add it in options to score this link.",
     "safeNoThreat": "Looks safe. No obvious structural threats detected.",

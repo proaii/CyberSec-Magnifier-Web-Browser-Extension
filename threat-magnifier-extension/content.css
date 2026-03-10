@@ -109,32 +109,30 @@
 
 /* Minimal Mode Flags */
 #threat-magnifier-tooltip.minimal-mode {
-  width: 20px !important;
-  height: 20px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
   padding: 0 !important;
-  border: 2px solid white !important;
+  border: none !important;
   background-color: transparent !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
 #threat-magnifier-tooltip.minimal-mode.status-safe {
-  background-color: #4caf50 !important;
-  border-color: white !important;
+  display: none !important;
 }
 
 #threat-magnifier-tooltip.minimal-mode.status-warning {
   background-color: #ffc107 !important;
-  border-color: white !important;
 }
 
 #threat-magnifier-tooltip.minimal-mode.status-danger {
   background-color: #f44336 !important;
-  border-color: white !important;
 }
 
 /* ── Danger-link block warning banner ──────────────────────────────────────── */
 #threat-magnifier-block-warning {
-  position: fixed;
+  position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
@@ -157,6 +155,7 @@
     opacity: 0;
     transform: translateX(-50%) translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);

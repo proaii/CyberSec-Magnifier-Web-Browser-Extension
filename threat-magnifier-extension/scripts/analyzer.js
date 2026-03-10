@@ -3,7 +3,8 @@
 // Pure functions — no global state read at definition time, no DOM side-effects.
 // =============================================================================
 
-function analyzeElement(element) {
+// ── Internal: analyse a SINGLE element only ───────────────────────────────────
+function _analyseSingle(element) {
   let reasons = [];
   let score = 0; // 0 = safe | 1 = warning | 2 = danger
   let previewUrl = null;
@@ -122,7 +123,7 @@ function analyzeElement(element) {
         });
         score = Math.max(score, 1);
       }
-    } catch (err) {}
+    } catch (err) { }
 
     // Subdomain spoofing / brand impersonation
     const spoofBrands = {
@@ -163,7 +164,7 @@ function analyzeElement(element) {
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Open redirect
     try {
@@ -206,10 +207,10 @@ function analyzeElement(element) {
               });
               score = Math.max(score, 1);
             }
-          } catch (e) {}
+          } catch (e) { }
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Missing rel="noopener" on target="_blank"
     if (element.target === "_blank") {
@@ -279,7 +280,7 @@ function analyzeElement(element) {
         });
         score = Math.max(score, 2);
       }
-    } catch (err) {}
+    } catch (err) { }
   }
 
   // ── 3. Password field ─────────────────────────────────────────────────────
@@ -336,7 +337,7 @@ function analyzeElement(element) {
           });
           score = Math.max(score, 1);
         }
-      } catch (e) {}
+      } catch (e) { }
     } else {
       reasons.push({
         short: tmText(
@@ -374,13 +375,57 @@ function analyzeElement(element) {
           });
           score = Math.max(score, 2);
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
   if (score === 0) return { status: "safe", analysis: reasons, previewUrl };
   if (score === 1) return { status: "warning", analysis: reasons, previewUrl };
   return { status: "danger", analysis: reasons, previewUrl };
+}
+
+// ── Public: scan element + ancestors + descendants, return worst threat ────────
+function analyzeElement(element) {
+  const candidates = new Set();
+
+  // 1. The element itself
+  candidates.add(element);
+
+  // 2. Walk UP ancestors (up to 5 levels) — catches <a> wrapping a hovered inner element
+  let ancestor = element.parentElement;
+  for (let i = 0; i < 5 && ancestor; i++) {
+    candidates.add(ancestor);
+    ancestor = ancestor.parentElement;
+  }
+
+  // 3. Walk DOWN descendants — catches inner <a> tags inside hovered buttons/divs
+  const innerEls = element.querySelectorAll(
+    'a[href], form, iframe, input[type="password"], script, base'
+  );
+  innerEls.forEach((el) => candidates.add(el));
+
+  // 4. Analyse each candidate, merge and prioritise worst threat
+  let bestScore = 0;
+  let bestReasons = [];
+  let bestPreviewUrl = null;
+
+  for (const el of candidates) {
+    const result = _analyseSingle(el);
+    const s = result.status === "danger" ? 2 : result.status === "warning" ? 1 : 0;
+    if (s > bestScore) {
+      bestScore = s;
+      bestReasons = result.analysis;
+      bestPreviewUrl = result.previewUrl;
+    } else if (s === bestScore && result.analysis.length > bestReasons.length) {
+      // Same level but more reasons — prefer the richer result
+      bestReasons = result.analysis;
+      if (result.previewUrl) bestPreviewUrl = result.previewUrl;
+    }
+  }
+
+  if (bestScore === 0) return { status: "safe", analysis: bestReasons, previewUrl: bestPreviewUrl };
+  if (bestScore === 1) return { status: "warning", analysis: bestReasons, previewUrl: bestPreviewUrl };
+  return { status: "danger", analysis: bestReasons, previewUrl: bestPreviewUrl };
 }
 
 // Scans all meaningful elements on the page and returns a summary.
@@ -392,7 +437,7 @@ function scanEntirePage() {
     warning = 0,
     safe = 0;
   elements.forEach((el) => {
-    const result = analyzeElement(el);
+    const result = _analyseSingle(el);
     if (result.status === "danger") danger++;
     else if (result.status === "warning") warning++;
     else safe++;

@@ -16,6 +16,8 @@ function blockDangerClick(e) {
   showBlockWarning(e.target.closest("a") || e.target);
 }
 
+let _bannerScrollHandler = null;
+
 function showBlockWarning(anchor) {
   removeBlockWarning();
   const banner = document.createElement("div");
@@ -23,10 +25,10 @@ function showBlockWarning(anchor) {
   const title = tmText("blockedTitle", "Threat Magnifier blocked this link!");
   const desc = tmText(
     "blockedDesc",
-    'This link was classified as dangerous. Click "Open Anyway" if you trust it.',
+    'This link was classified as dangerous. Click "Continue Anyway" if you trust it.',
   );
-  const okText = tmText("blockOk", "OK");
-  const proceedText = tmText("blockProceed", "Open Anyway");
+  const okText = tmText("blockOk", "Go Back");
+  const proceedText = tmText("blockProceed", "Continue Anyway");
   banner.innerHTML =
     `<strong>\u26A0\uFE0F ${title}</strong>` +
     `<span>${desc}</span>` +
@@ -34,7 +36,17 @@ function showBlockWarning(anchor) {
     `<button id="tm-block-dismiss">${okText}</button>` +
     `<button id="tm-block-proceed">${proceedText}</button>` +
     "</div>";
-  document.body.appendChild(banner);
+
+  // Append to <html> to avoid transform inheritance from <body>
+  document.documentElement.appendChild(banner);
+
+  // Keep banner pinned 20px from viewport top even while scrolling
+  function repositionBanner() {
+    banner.style.top = (window.scrollY + 20) + "px";
+  }
+  repositionBanner();
+  _bannerScrollHandler = repositionBanner;
+  window.addEventListener("scroll", _bannerScrollHandler, { passive: true });
 
   document.getElementById("tm-block-dismiss").addEventListener("click", () => {
     removeBlockWarning();
@@ -51,6 +63,10 @@ function showBlockWarning(anchor) {
 }
 
 function removeBlockWarning() {
+  if (_bannerScrollHandler) {
+    window.removeEventListener("scroll", _bannerScrollHandler);
+    _bannerScrollHandler = null;
+  }
   const existing = document.getElementById("threat-magnifier-block-warning");
   if (existing) existing.remove();
 }
@@ -71,6 +87,10 @@ function updateTooltip(e, status, analysis, urlPreview) {
   tip.className = "status-" + status;
 
   if (!advancedMode) {
+    if (status === "safe") {
+      tip.style.display = "none";
+      return;
+    }
     tip.classList.add("minimal-mode");
     tip.innerHTML = "";
     tip.style.display = "block";
@@ -105,7 +125,7 @@ function updateTooltip(e, status, analysis, urlPreview) {
           "https://www.virustotal.com/gui/search/" +
           encodeURIComponent(urlPreview);
         html += `<a class="vt-link" href="${vtUrl}" target="_blank" rel="noopener noreferrer">🔍 ${tmText("vtCheckLink", "Check on VirusTotal")} ↗</a>`;
-      } catch (ex) {}
+      } catch (ex) { }
     }
 
     // Website preview iframe
@@ -116,7 +136,7 @@ function updateTooltip(e, status, analysis, urlPreview) {
                             <span class="preview-label">${tmText("websitePreview", "Website Preview:")}</span>
                             <iframe class="preview-iframe" src="${urlPreview}" sandbox=""></iframe>
                          </div>`;
-      } catch (ex) {}
+      } catch (ex) { }
     }
 
     tip.innerHTML = html;
