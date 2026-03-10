@@ -1,88 +1,88 @@
 /* Container for the magnifying glass tooltip */
 #threat-magnifier-tooltip {
-    position: fixed;
-    z-index: 2147483647;
-    /* Ensure it's above everything on the page */
-    pointer-events: auto;
-    /* Changed to auto so we can scroll the iframe if needed, but handled by mouseout logic */
-    background: rgba(30, 30, 30, 0.95);
-    color: white;
-    padding: 12px;
-    border-radius: 8px;
-    font-family: Arial, sans-serif;
-    font-size: 13px;
-    width: 380px;
-    /* Wider to accommodate verbose text and previews */
-    max-width: 90vw;
-    /* Prevent overflowing small screens */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-    border: 2px solid #ccc;
-    /* Default border */
-    display: none;
-    transition: none;
-    /* Fast updates for smooth movement following mouse */
+  position: fixed;
+  z-index: 2147483647;
+  /* Ensure it's above everything on the page */
+  pointer-events: auto;
+  /* Changed to auto so we can scroll the iframe if needed, but handled by mouseout logic */
+  background: rgba(30, 30, 30, 0.95);
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  width: 380px;
+  /* Wider to accommodate verbose text and previews */
+  max-width: 90vw;
+  /* Prevent overflowing small screens */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  border: 2px solid #ccc;
+  /* Default border */
+  display: none;
+  transition: none;
+  /* Fast updates for smooth movement following mouse */
 }
 
 /* Tooltip border coloring based on threat level */
 #threat-magnifier-tooltip.status-safe {
-    border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 #threat-magnifier-tooltip.status-warning {
-    border-color: #FFC107;
+  border-color: #ffc107;
 }
 
 #threat-magnifier-tooltip.status-danger {
-    border-color: #F44336;
+  border-color: #f44336;
 }
 
 /* Status Text Colors */
 #threat-magnifier-tooltip.status-safe strong {
-    color: #81c784;
+  color: #81c784;
 }
 
 #threat-magnifier-tooltip.status-warning strong {
-    color: #ffd54f;
+  color: #ffd54f;
 }
 
 #threat-magnifier-tooltip.status-danger strong {
-    color: #e57373;
+  color: #e57373;
 }
 
 /* List formatting in the tooltip */
 #threat-magnifier-tooltip ul {
-    padding-left: 15px;
-    margin: 8px 0 0 0;
+  padding-left: 15px;
+  margin: 8px 0 0 0;
 }
 
 #threat-magnifier-tooltip li {
-    margin-bottom: 8px;
-    line-height: 1.4;
-    color: #eee;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  color: #eee;
 }
 
 /* Preview Iframe styling */
 #threat-magnifier-tooltip .preview-container {
-    margin-top: 12px;
-    border-top: 1px solid #555;
-    padding-top: 10px;
+  margin-top: 12px;
+  border-top: 1px solid #555;
+  padding-top: 10px;
 }
 
 #threat-magnifier-tooltip .preview-label {
-    display: block;
-    font-size: 11px;
-    color: #aaa;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 #threat-magnifier-tooltip .preview-iframe {
-    width: 100%;
-    height: 180px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #fff;
+  width: 100%;
+  height: 180px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #fff;
 }
 
 /* 
@@ -90,19 +90,123 @@
  * Forced styles (!important) so the page CSS doesn't override the magnifier's outline 
  */
 .threat-magnifier-highlight-safe {
-    outline: 2px solid #4CAF50 !important;
-    background-color: rgba(76, 175, 80, 0.1) !important;
-    outline-offset: -1px;
+  outline: 2px solid #4caf50 !important;
+  background-color: rgba(76, 175, 80, 0.1) !important;
+  outline-offset: -1px;
 }
 
 .threat-magnifier-highlight-warning {
-    outline: 2px dashed #FFC107 !important;
-    background-color: rgba(255, 193, 7, 0.1) !important;
-    outline-offset: -1px;
+  outline: 2px dashed #ffc107 !important;
+  background-color: rgba(255, 193, 7, 0.1) !important;
+  outline-offset: -1px;
 }
 
 .threat-magnifier-highlight-danger {
-    outline: 3px solid #F44336 !important;
-    background-color: rgba(244, 67, 54, 0.2) !important;
-    outline-offset: -1px;
+  outline: 3px solid #f44336 !important;
+  background-color: rgba(244, 67, 54, 0.2) !important;
+  outline-offset: -1px;
+}
+
+/* Minimal Mode Flags */
+#threat-magnifier-tooltip.minimal-mode {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  border: none !important;
+  background-color: transparent !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-safe {
+  display: none !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-warning {
+  background-color: #ffc107 !important;
+}
+
+#threat-magnifier-tooltip.minimal-mode.status-danger {
+  background-color: #f44336 !important;
+}
+
+/* ── Danger-link block warning banner ──────────────────────────────────────── */
+#threat-magnifier-block-warning {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  background: rgba(30, 30, 30, 0.97);
+  color: #fff;
+  padding: 16px 24px;
+  border-radius: 10px;
+  border: 2px solid #f44336;
+  box-shadow: 0 8px 32px rgba(244, 67, 54, 0.4);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  text-align: center;
+  max-width: 420px;
+  animation: tm-slide-in 0.25s ease-out;
+}
+
+@keyframes tm-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+#threat-magnifier-block-warning strong {
+  display: block;
+  font-size: 15px;
+  color: #e57373;
+  margin-bottom: 6px;
+}
+
+#threat-magnifier-block-warning span {
+  display: block;
+  color: #ccc;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.tm-block-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.tm-block-actions button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#tm-block-dismiss {
+  background: #4caf50;
+  color: #fff;
+}
+
+#tm-block-dismiss:hover {
+  background: #388e3c;
+}
+
+#tm-block-proceed {
+  background: #555;
+  color: #bbb;
+}
+
+#tm-block-proceed:hover {
+  background: #777;
+  color: #fff;
 }

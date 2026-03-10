@@ -1,31 +1,48 @@
 {
-    "manifest_version": 3,
-    "name": "Threat Magnifier",
-    "version": "1.0",
-    "description": "Like a magnifying glass, point at web components to see if they are a potential threat.",
-    "action": {
-        "default_popup": "popup.html"
-    },
-    "permissions": [
-        "storage"
-    ],
-    "content_scripts": [
-        {
-            "matches": [
-                "<all_urls>"
-            ],
-            "css": [
-                "content.css"
-            ],
-            "js": [
-                "content.js"
-            ]
-        }
-    ],
-    "browser_specific_settings": {
-        "gecko": {
-            "id": "threatmagnifier@example.com",
-            "strict_min_version": "109.0"
-        }
+  "manifest_version": 3,
+  "name": "Threat Magnifier",
+  "version": "2.0",
+  "description": "Like a magnifying glass, point at web components to see if they are a potential threat.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.virustotal.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "js": [
+        "i18n-utils.js",
+        "scripts/api.js",
+        "scripts/analyzer.js",
+        "scripts/ui.js",
+        "content.js"
+      ]
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "i18n/*.json"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "threatmagnifier@example.com",
+      "strict_min_version": "109.0"
+    }
+  }
 }

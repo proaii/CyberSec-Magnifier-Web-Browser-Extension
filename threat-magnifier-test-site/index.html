@@ -128,6 +128,7 @@
         <p>Here is a link to an <a href="http://example.com" target="_blank">External HTTP site</a>.</p>
         <p>Here is another <a href="https://example.org" target="_blank">External HTTPS site</a>.</p>
 
+
         <p>Embedded Content (iFrames often hide ads or trackers):</p>
         <iframe src="about:blank" title="Empty Test iFrame"></iframe>
     </div>
@@ -151,13 +152,22 @@
         <ul>
             <li><a href="javascript:alert('XSS Attack Execution!');">Click for Free Prize! (Executes JavaScript)</a>
             </li>
-            <li>
-                <p>There is a hidden link right here 👉<a href="http://malware.com" class="hidden-link">Invisible
-                        malware link</a>👈 you can't see it, but it might overlap with something!</p>
-            </li>
-            <li>
-                <p>And another one here 👉<a href="http://tracking.com" class="invisible-link">Hidden tracking
-                        link</a>👈</p>
+            <li><a href="http://192.168.1.100/login">Login via Raw IP Address</a></li>
+
+            <li><a href="https://xn--pple-43d.com">Apple Support (Punycode Homograph)</a></li>
+
+            <li><a href="https://example.com/update.exe">Download Critical Update (.exe)</a></li>
+
+            <li><a href="https://example.com/script.ps1">Run Diagnostic Script (.ps1)</a></li>
+
+            <li><a href="data:text/html,<h1>Fake Login</h1><input placeholder='Password'>">Verify Your Account (Data
+                    URI)</a></li>
+
+            <li><a href="https://paypal-secure.evil.net/login">PayPal Security Check (Brand Spoofing)</a></li>
+
+            <li><a href="https://google-verify.phishing.com/alert">Google Account Alert (Brand Spoofing)</a></li>
+            <li><a href="http://185.117.153.176/upload/_dispatch.php" target="_blank">External Malicious site Don't
+                    Clicked!!!</a>
             </li>
         </ul>
     </div>
