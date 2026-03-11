@@ -1,15 +1,13 @@
 // =============================================================================
-// api.js — VirusTotal API Integration (Search Endpoint)
-// Uses GET /api/v3/search?query=<url> — works on free API keys without
-// requiring the URL to have been previously submitted for scanning.
+// api.js — VirusTotal API Integration
+// Queries VirusTotal's Search endpoint (GET /api/v3/search) to look up URLs.
 // Depends on globals in content.js : vtApiKey
 // Depends on globals in ui.js      : currentHoverTarget
 // =============================================================================
 
 async function fetchVirusTotalScore(url, containerId, tipElement, currentStatus) {
   try {
-    // Use the VirusTotal Search API — more reliable than URL ID lookup
-    // because it doesn't require the URL to have been previously scanned.
+    // Query VirusTotal Search API with the URL
     const response = await fetch(
       `https://www.virustotal.com/api/v3/search?query=${encodeURIComponent(url)}&limit=5`,
       {
@@ -45,7 +43,7 @@ async function fetchVirusTotalScore(url, containerId, tipElement, currentStatus)
     const urlResult = items && items.find(i => i.type === "url");
 
     if (!urlResult) {
-      // URL not yet in VT database — submit it for scanning guidance
+      // URL has not been scanned by VirusTotal yet
       container.innerHTML = tmText("vtNoData", "VirusTotal: URL not in database yet. Visit VirusTotal to scan it.");
       return;
     }

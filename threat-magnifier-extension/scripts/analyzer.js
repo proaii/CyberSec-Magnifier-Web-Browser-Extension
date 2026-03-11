@@ -39,12 +39,14 @@ function scanJavascriptURI(uri) {
 function _analyseSingle(element) {
   let reasons = [];
   let score = 0; // 0 = safe | 1 = warning | 2 = danger
-  let previewUrl = null;
+  let previewUrl = null; // used for iframe website preview
+  let vtUrl = null;      // used for VirusTotal API scan (may differ from previewUrl)
 
   // ── 1. Link (<a>) ─────────────────────────────────────────────────────────
   if (element.tagName === "A") {
     const href = element.getAttribute("href") || "";
     previewUrl = element.href; // absolute URL
+    vtUrl = element.href;      // VT always gets the real link URL
 
     // javascript: URI — deep static analysis
     if (href.trim().toLowerCase().startsWith("javascript:")) {
@@ -77,6 +79,7 @@ function _analyseSingle(element) {
         score = Math.max(score, 1);
       }
       previewUrl = null;
+      vtUrl = null; // javascript: URIs can't be scanned by VT
 
       // Plain HTTP
     } else if (href.startsWith("http://")) {
@@ -90,11 +93,10 @@ function _analyseSingle(element) {
       score = Math.max(score, 1);
     }
 
-    // Raw IP address (skip localhost/dev server IPs)
+    // Raw IP address check (skip loopback addresses used in local dev)
     const ipMatch = element.href.match(/^https?:\/\/(\d{1,3}(\.\d{1,3}){3})/);
     if (ipMatch) {
       const ip = ipMatch[1];
-      const isLocalhost = ip === "127.0.0.1" || ip === "0.0.0.0" || ip.startsWith("192.168.") === false && ip === ip; // keep
       const isLoopback = ip === "127.0.0.1" || ip === "0.0.0.0";
       if (!isLoopback) {
         reasons.push({
@@ -143,7 +145,7 @@ function _analyseSingle(element) {
         ),
       });
       score = Math.max(score, 2);
-      previewUrl = null;
+      previewUrl = null; // unsafe to iframe-preview executable files
     }
 
     // Data URI
@@ -160,6 +162,7 @@ function _analyseSingle(element) {
       });
       score = Math.max(score, 2);
       previewUrl = null;
+      vtUrl = null; // data: URIs can't be scanned by VT
     }
 
     // External link
@@ -270,23 +273,7 @@ function _analyseSingle(element) {
       }
     } catch (e) { }
 
-    // Missing rel="noopener" on target="_blank"
-    if (element.target === "_blank") {
-      const rel = element.getAttribute("rel") || "";
-      if (!rel.includes("noopener") && !rel.includes("noreferrer")) {
-        reasons.push({
-          short: tmText(
-            "reasonNoNoopenerShort",
-            'Opens in new tab without rel="noopener" — risk of reverse tabnapping.',
-          ),
-          verbose: tmText(
-            "reasonNoNoopenerVerbose",
-            "The opened page can access window.opener and silently redirect this page to a phishing site (reverse tabnapping attack).",
-          ),
-        });
-        score = Math.max(score, 1);
-      }
-    }
+
 
     // Hidden link (invisible trap)
     const style = window.getComputedStyle(element);
@@ -449,9 +436,9 @@ function _analyseSingle(element) {
     }
   }
 
-  if (score === 0) return { status: "safe", analysis: reasons, previewUrl };
-  if (score === 1) return { status: "warning", analysis: reasons, previewUrl };
-  return { status: "danger", analysis: reasons, previewUrl };
+  if (score === 0) return { status: "safe", analysis: reasons, previewUrl, vtUrl };
+  if (score === 1) return { status: "warning", analysis: reasons, previewUrl, vtUrl };
+  return { status: "danger", analysis: reasons, previewUrl, vtUrl };
 }
 
 // ── Public: scan element + nearest meaningful ancestor + direct children ───────
@@ -493,6 +480,7 @@ function analyzeElement(element) {
   let bestScore = 0;
   let bestReasons = [];
   let bestPreviewUrl = null;
+  let bestVtUrl = null;
 
   for (const el of candidates) {
     const result = _analyseSingle(el);
@@ -501,18 +489,20 @@ function analyzeElement(element) {
       bestScore = s;
       bestReasons = result.analysis;
       bestPreviewUrl = result.previewUrl;
+      bestVtUrl = result.vtUrl;
     } else if (s === bestScore && result.analysis.length > bestReasons.length) {
       bestReasons = result.analysis;
       if (result.previewUrl) bestPreviewUrl = result.previewUrl;
+      if (result.vtUrl) bestVtUrl = result.vtUrl;
     }
   }
 
-  if (bestScore === 0) return { status: "safe", analysis: bestReasons, previewUrl: bestPreviewUrl };
-  if (bestScore === 1) return { status: "warning", analysis: bestReasons, previewUrl: bestPreviewUrl };
-  return { status: "danger", analysis: bestReasons, previewUrl: bestPreviewUrl };
+  if (bestScore === 0) return { status: "safe", analysis: bestReasons, previewUrl: bestPreviewUrl, vtUrl: bestVtUrl };
+  if (bestScore === 1) return { status: "warning", analysis: bestReasons, previewUrl: bestPreviewUrl, vtUrl: bestVtUrl };
+  return { status: "danger", analysis: bestReasons, previewUrl: bestPreviewUrl, vtUrl: bestVtUrl };
 }
 
-// Scans all meaningful elements on the page and returns a summary.
+// Scans all meaningful elements on the page and returns threat count summary.
 function scanEntirePage() {
   const elements = document.querySelectorAll(
     'a[href], form, iframe, input[type="password"], script, base',

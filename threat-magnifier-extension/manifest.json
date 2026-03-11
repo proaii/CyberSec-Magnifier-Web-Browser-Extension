@@ -33,7 +33,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "i18n/*.json"
+        "i18n/*.json",
+        "warning-avatar.png"
       ],
       "matches": [
         "<all_urls>"
