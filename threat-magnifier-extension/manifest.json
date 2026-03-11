@@ -22,7 +22,6 @@
       ],
       "js": [
         "i18n-utils.js",
-        "scripts/hash.js",
         "scripts/api.js",
         "scripts/analyzer.js",
         "scripts/ui.js",

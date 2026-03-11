@@ -105,18 +105,8 @@ function updateTooltip(e, status, analysis, urlPreview, vtUrl) {
     const statusTitle = tmText("statusTitle", "Status");
     let html = `<strong>${statusTitle}: ${tmStatusLabel(status)}</strong><ul>`;
 
-    // Collect any hash placeholder item (set by analyzer.js for inline scripts)
-    let hashPlaceholder = null;
-    const hashPlaceholderId = `tm-hash-li-${Date.now()}`;
-
     analysis.forEach((item) => {
-      if (item && item.isHashPlaceholder) {
-        // Render a uniquely-IDed <li> we can update after async hash check
-        hashPlaceholder = item;
-        html += `<li id="${hashPlaceholderId}">🔐 Hash integrity: <em>computing SHA-256…</em></li>`;
-      } else {
-        html += `<li>${item.short || item}</li>`;
-      }
+      html += `<li>${item.short || item}</li>`;
     });
 
     // VirusTotal inline result placeholder
@@ -127,8 +117,8 @@ function updateTooltip(e, status, analysis, urlPreview, vtUrl) {
       html += `<li><em>${tmText("vtKeyMissing", "VirusTotal API key missing. Add it in options to score this link.")}</em></li>`;
     }
 
-    // Count real (non-placeholder) items to decide if we need the 'Looks safe' fallback
-    const realItemCount = analysis.filter(i => !i.isHashPlaceholder).length;
+    // Count real items to decide if we need the 'Looks safe' fallback
+    const realItemCount = analysis.length;
     if (realItemCount === 0) {
       html += `<li>${tmText("safeNoThreat", "Looks safe. No obvious structural threats detected.")}</li>`;
     }
@@ -159,16 +149,6 @@ function updateTooltip(e, status, analysis, urlPreview, vtUrl) {
     tip.innerHTML = html;
     tip.style.display = "block";
 
-    // ── Async hash check ──────────────────────────────────────────────────
-    if (hashPlaceholder && hashPlaceholder.scriptElement) {
-      checkScriptHash(hashPlaceholder.scriptElement)
-        .then((result) => { updateHashResult(hashPlaceholderId, result, tip, status); })
-        .catch(() => {
-          const li = document.getElementById(hashPlaceholderId);
-          if (li) li.innerHTML = "⚠️ Hash check unavailable (crypto.subtle not accessible).";
-        });
-    }
-
     // Async VirusTotal URL check
     if (vtUrl && vtApiKey) {
       fetchVirusTotalScore(vtUrl, vtContainerId, tip, status);
@@ -189,57 +169,7 @@ function updateTooltip(e, status, analysis, urlPreview, vtUrl) {
   tip.style.top = topPos + "px";
 }
 
-// Updates the hash placeholder <li> once the async checkScriptHash resolves.
-function updateHashResult(liId, result, tipElement, currentStatus) {
-  const li = document.getElementById(liId);
-  if (!li) return; // Tooltip closed before hash finished
 
-  if (result.matched) {
-    // Known malicious script hash detected!
-    li.innerHTML =
-      `🔴 <strong>Hash matched known malicious signature!</strong><br>` +
-      `<span style="color:#e57373;font-size:11px;">` +
-      `⚠️ ${result.description}</span><br>` +
-      `<span style="color:#888;font-size:10px;font-family:monospace;word-break:break-all;">` +
-      `SHA-256: ${result.hash}</span>`;
-
-    // Upgrade tooltip to DANGER
-    if (currentStatus !== "danger") {
-      tipElement.className = "status-danger";
-      const strong = tipElement.querySelector("strong");
-      if (strong) strong.textContent = `Status: DANGER`;
-    }
-    // Re-highlight the hovered element
-    if (currentHoverTarget) {
-      currentHoverTarget.classList.remove(
-        "threat-magnifier-highlight-safe",
-        "threat-magnifier-highlight-warning",
-      );
-      currentHoverTarget.classList.add("threat-magnifier-highlight-danger");
-    }
-
-    // If VT has a file record for this hash, do a live VT file hash lookup
-    if (result.vtKnown && vtApiKey && result.hash) {
-      const vtFileLiId = `tm-vt-file-${Date.now()}`;
-      const vtLi = document.createElement("li");
-      vtLi.id = vtFileLiId;
-      vtLi.innerHTML = `🛡️ <em>Querying VirusTotal file database…</em>`;
-      li.after(vtLi);
-      fetchVirusTotalFileHash(result.hash, vtFileLiId, tipElement, vtApiKey);
-    } else if (result.vtKnown && !vtApiKey) {
-      const vtLi = document.createElement("li");
-      vtLi.innerHTML = `🛡️ <em style="color:#888;">Add VirusTotal API key in options to see live AV scan results.</em>`;
-      li.after(vtLi);
-    }
-  } else {
-    // No match — show the computed hash for transparency
-    const shortHash = result.hash ? result.hash.substring(0, 16) + "…" : "N/A";
-    li.innerHTML =
-      `✅ Hash integrity: <strong>No known malicious signature</strong><br>` +
-      `<span style="color:#888;font-size:10px;font-family:monospace;">` +
-      `SHA-256: ${shortHash}</span>`;
-  }
-}
 
 function optimizedHandleMouseOver(e) {
   if (!isActive) return;
