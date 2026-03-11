@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderTexts() {
         const text = t();
-        titleText.textContent = text.title || "Threat Magnifier";
+        titleText.textContent = text.title || "Threat Magnifier 2.0";
         descText.textContent = text.description || "What a Sigma Tool!";
         advancedLabel.textContent = text.advancedLabel || "Advanced Option";
         advancedDesc.textContent =
