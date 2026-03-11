@@ -399,6 +399,7 @@ function _analyseSingle(element) {
         }
       } catch (e) { }
     } else {
+      // Inline script — static flag
       reasons.push({
         short: tmText(
           "reasonInlineScriptShort",
@@ -410,6 +411,15 @@ function _analyseSingle(element) {
         ),
       });
       score = Math.max(score, 1);
+
+      // ── Hash Integrity Check (async) ────────────────────────────────────
+      // Mark a placeholder so the tooltip can show a "Checking hash…" item.
+      // The actual async result is posted back by updateHashResult() in ui.js.
+      reasons.push({
+        short: "🔐 Hash integrity: <em id='tm-hash-status'>computing SHA-256…</em>",
+        isHashPlaceholder: true,
+        scriptElement: element,
+      });
     }
   }
 

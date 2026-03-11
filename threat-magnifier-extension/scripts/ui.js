@@ -100,8 +100,19 @@ function updateTooltip(e, status, analysis, urlPreview) {
     // Build analysis list
     const statusTitle = tmText("statusTitle", "Status");
     let html = `<strong>${statusTitle}: ${tmStatusLabel(status)}</strong><ul>`;
+
+    // Collect any hash placeholder item (set by analyzer.js for inline scripts)
+    let hashPlaceholder = null;
+    const hashPlaceholderId = `tm-hash-li-${Date.now()}`;
+
     analysis.forEach((item) => {
-      html += `<li>${item.short || item}</li>`;
+      if (item && item.isHashPlaceholder) {
+        // Render a uniquely-IDed <li> we can update after async hash check
+        hashPlaceholder = item;
+        html += `<li id="${hashPlaceholderId}">🔐 Hash integrity: <em>computing SHA-256…</em></li>`;
+      } else {
+        html += `<li>${item.short || item}</li>`;
+      }
     });
 
     // VirusTotal inline result placeholder
@@ -112,7 +123,9 @@ function updateTooltip(e, status, analysis, urlPreview) {
       html += `<li><em>${tmText("vtKeyMissing", "VirusTotal API key missing. Add it in options to score this link.")}</em></li>`;
     }
 
-    if (analysis.length === 0) {
+    // Count real (non-placeholder) items to decide if we need the 'Looks safe' fallback
+    const realItemCount = analysis.filter(i => !i.isHashPlaceholder).length;
+    if (realItemCount === 0) {
       html += `<li>${tmText("safeNoThreat", "Looks safe. No obvious structural threats detected.")}</li>`;
     }
     html += `</ul>`;
@@ -134,13 +147,25 @@ function updateTooltip(e, status, analysis, urlPreview) {
         new URL(urlPreview);
         html += `<div class="preview-container">
                             <span class="preview-label">${tmText("websitePreview", "Website Preview:")}</span>
-                            <iframe class="preview-iframe" src="${urlPreview}" sandbox=""></iframe>
+                            <div class="preview-iframe-wrapper">
+                              <iframe class="preview-iframe" src="${urlPreview}" sandbox="allow-scripts allow-same-origin"></iframe>
+                            </div>
                          </div>`;
       } catch (ex) { }
     }
 
     tip.innerHTML = html;
     tip.style.display = "block";
+
+    // ── Async hash check ──────────────────────────────────────────────────
+    if (hashPlaceholder && hashPlaceholder.scriptElement) {
+      checkScriptHash(hashPlaceholder.scriptElement)
+        .then((result) => { updateHashResult(hashPlaceholderId, result, tip, status); })
+        .catch(() => {
+          const li = document.getElementById(hashPlaceholderId);
+          if (li) li.innerHTML = "⚠️ Hash check unavailable (crypto.subtle not accessible).";
+        });
+    }
 
     if (urlPreview && vtApiKey) {
       fetchVirusTotalScore(urlPreview, vtContainerId, tip, status);
@@ -160,6 +185,46 @@ function updateTooltip(e, status, analysis, urlPreview) {
   tip.style.left = leftPos + "px";
   tip.style.top = topPos + "px";
 }
+
+// ── Hash result updater (called after async checkScriptHash resolves) ─────────
+function updateHashResult(liId, result, tipElement, currentStatus) {
+  const li = document.getElementById(liId);
+  if (!li) return; // Tooltip closed before hash finished
+
+  if (result.matched) {
+    // Known malicious script hash detected!
+    li.innerHTML =
+      `\ud83d\udd34 <strong>Hash matched known malicious signature!</strong><br>` +
+      `<span style="color:#e57373;font-size:11px;">` +
+      `\u26a0\ufe0f ${result.description}</span><br>` +
+      `<span style="color:#888;font-size:10px;font-family:monospace;word-break:break-all;">` +
+      `SHA-256: ${result.hash}</span>`;
+
+    // Upgrade tooltip to DANGER
+    if (currentStatus !== "danger") {
+      tipElement.className = "status-danger";
+      const strong = tipElement.querySelector("strong");
+      if (strong) strong.textContent = `Status: DANGER`;
+    }
+    // Re-highlight the hovered element
+    if (currentHoverTarget) {
+      currentHoverTarget.classList.remove(
+        "threat-magnifier-highlight-safe",
+        "threat-magnifier-highlight-warning",
+      );
+      currentHoverTarget.classList.add("threat-magnifier-highlight-danger");
+    }
+  } else {
+    // No match — show the computed hash for transparency
+    const shortHash = result.hash ? result.hash.substring(0, 16) + "\u2026" : "N/A";
+    li.innerHTML =
+      `\u2705 Hash integrity: <strong>No known malicious signature</strong><br>` +
+      `<span style="color:#888;font-size:10px;font-family:monospace;">` +
+      `SHA-256: ${shortHash}</span>`;
+  }
+}
+
+
 
 function optimizedHandleMouseOver(e) {
   if (!isActive) return;
