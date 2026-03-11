@@ -29,13 +29,17 @@ function showBlockWarning(anchor) {
   );
   const okText = tmText("blockOk", "Go Back");
   const proceedText = tmText("blockProceed", "Continue Anyway");
+  // Get the avatar image URL from the extension's bundled files
+  const avatarUrl = chrome.runtime.getURL("warning-avatar.png");
   banner.innerHTML =
+    `<img src="${avatarUrl}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #fff;margin-right:14px;flex-shrink:0;" alt="Warning">` +
+    `<div style="flex:1;">` +
     `<strong>\u26A0\uFE0F ${title}</strong>` +
     `<span>${desc}</span>` +
     '<div class="tm-block-actions">' +
     `<button id="tm-block-dismiss">${okText}</button>` +
     `<button id="tm-block-proceed">${proceedText}</button>` +
-    "</div>";
+    "</div></div>";
 
   // Append to <html> to avoid transform inheritance from <body>
   document.documentElement.appendChild(banner);
@@ -80,7 +84,7 @@ function createTooltip() {
   return tooltip;
 }
 
-function updateTooltip(e, status, analysis, urlPreview) {
+function updateTooltip(e, status, analysis, urlPreview, vtUrl) {
   if (!isActive) return;
 
   const tip = createTooltip();
@@ -117,9 +121,9 @@ function updateTooltip(e, status, analysis, urlPreview) {
 
     // VirusTotal inline result placeholder
     const vtContainerId = `vt-result-${Date.now()}`;
-    if (urlPreview && vtApiKey) {
+    if (vtUrl && vtApiKey) {
       html += `<li id="${vtContainerId}"><em>${tmText("vtFetching", "Fetching VirusTotal report...")}</em></li>`;
-    } else if (urlPreview && !vtApiKey) {
+    } else if (vtUrl && !vtApiKey) {
       html += `<li><em>${tmText("vtKeyMissing", "VirusTotal API key missing. Add it in options to score this link.")}</em></li>`;
     }
 
@@ -130,14 +134,12 @@ function updateTooltip(e, status, analysis, urlPreview) {
     }
     html += `</ul>`;
 
-    // Quick "Check on VirusTotal" link
-    if (urlPreview) {
+    // "Check on VirusTotal" link shown below the analysis list
+    if (vtUrl) {
       try {
-        new URL(urlPreview);
-        const vtUrl =
-          "https://www.virustotal.com/gui/search/" +
-          encodeURIComponent(urlPreview);
-        html += `<a class="vt-link" href="${vtUrl}" target="_blank" rel="noopener noreferrer">🔍 ${tmText("vtCheckLink", "Check on VirusTotal")} ↗</a>`;
+        new URL(vtUrl);
+        const vtGuiUrl = "https://www.virustotal.com/gui/search/" + encodeURIComponent(vtUrl);
+        html += `<a class="vt-link" href="${vtGuiUrl}" target="_blank" rel="noopener noreferrer">🔍 ${tmText("vtCheckLink", "Check on VirusTotal")} ↗</a>`;
       } catch (ex) { }
     }
 
@@ -167,8 +169,9 @@ function updateTooltip(e, status, analysis, urlPreview) {
         });
     }
 
-    if (urlPreview && vtApiKey) {
-      fetchVirusTotalScore(urlPreview, vtContainerId, tip, status);
+    // Async VirusTotal URL check
+    if (vtUrl && vtApiKey) {
+      fetchVirusTotalScore(vtUrl, vtContainerId, tip, status);
     }
   }
 
@@ -186,7 +189,7 @@ function updateTooltip(e, status, analysis, urlPreview) {
   tip.style.top = topPos + "px";
 }
 
-// ── Hash result updater (called after async checkScriptHash resolves) ─────────
+// Updates the hash placeholder <li> once the async checkScriptHash resolves.
 function updateHashResult(liId, result, tipElement, currentStatus) {
   const li = document.getElementById(liId);
   if (!li) return; // Tooltip closed before hash finished
@@ -194,9 +197,9 @@ function updateHashResult(liId, result, tipElement, currentStatus) {
   if (result.matched) {
     // Known malicious script hash detected!
     li.innerHTML =
-      `\ud83d\udd34 <strong>Hash matched known malicious signature!</strong><br>` +
+      `🔴 <strong>Hash matched known malicious signature!</strong><br>` +
       `<span style="color:#e57373;font-size:11px;">` +
-      `\u26a0\ufe0f ${result.description}</span><br>` +
+      `⚠️ ${result.description}</span><br>` +
       `<span style="color:#888;font-size:10px;font-family:monospace;word-break:break-all;">` +
       `SHA-256: ${result.hash}</span>`;
 
@@ -214,17 +217,29 @@ function updateHashResult(liId, result, tipElement, currentStatus) {
       );
       currentHoverTarget.classList.add("threat-magnifier-highlight-danger");
     }
+
+    // If VT has a file record for this hash, do a live VT file hash lookup
+    if (result.vtKnown && vtApiKey && result.hash) {
+      const vtFileLiId = `tm-vt-file-${Date.now()}`;
+      const vtLi = document.createElement("li");
+      vtLi.id = vtFileLiId;
+      vtLi.innerHTML = `🛡️ <em>Querying VirusTotal file database…</em>`;
+      li.after(vtLi);
+      fetchVirusTotalFileHash(result.hash, vtFileLiId, tipElement, vtApiKey);
+    } else if (result.vtKnown && !vtApiKey) {
+      const vtLi = document.createElement("li");
+      vtLi.innerHTML = `🛡️ <em style="color:#888;">Add VirusTotal API key in options to see live AV scan results.</em>`;
+      li.after(vtLi);
+    }
   } else {
     // No match — show the computed hash for transparency
-    const shortHash = result.hash ? result.hash.substring(0, 16) + "\u2026" : "N/A";
+    const shortHash = result.hash ? result.hash.substring(0, 16) + "…" : "N/A";
     li.innerHTML =
-      `\u2705 Hash integrity: <strong>No known malicious signature</strong><br>` +
+      `✅ Hash integrity: <strong>No known malicious signature</strong><br>` +
       `<span style="color:#888;font-size:10px;font-family:monospace;">` +
       `SHA-256: ${shortHash}</span>`;
   }
 }
-
-
 
 function optimizedHandleMouseOver(e) {
   if (!isActive) return;
@@ -238,7 +253,7 @@ function optimizedHandleMouseOver(e) {
     if (advancedMode) {
       target.classList.add(`threat-magnifier-highlight-${result.status}`);
     }
-    updateTooltip(e, result.status, result.analysis, result.previewUrl);
+    updateTooltip(e, result.status, result.analysis, result.previewUrl, result.vtUrl);
 
     // Block clicks on danger links
     if (blockDangerLinks && result.status === "danger") {
@@ -271,6 +286,7 @@ function optimizedHandleMouseMove(e) {
   tooltip.style.top = topPos + "px";
 }
 
+// Handles mouseout: removes highlight and hides tooltip.
 function optimizedHandleMouseOut(e) {
   if (!isActive) return;
   const target = e.target;
