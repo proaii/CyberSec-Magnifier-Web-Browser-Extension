@@ -75,6 +75,20 @@ function removeBlockWarning() {
   if (existing) existing.remove();
 }
 
+function attachBlocker(target) {
+  if (blockDangerLinks) {
+    const anchor = target.tagName === "A" ? target : target.closest("a");
+    if (anchor) {
+      // Remove from previous blocked link first
+      if (blockedLink && blockedLink !== anchor) {
+        blockedLink.removeEventListener("click", blockDangerClick, true);
+      }
+      anchor.addEventListener("click", blockDangerClick, true);
+      blockedLink = anchor;
+    }
+  }
+}
+
 function createTooltip() {
   if (!tooltip) {
     tooltip = document.createElement("div");
@@ -186,16 +200,8 @@ function optimizedHandleMouseOver(e) {
     updateTooltip(e, result.status, result.analysis, result.previewUrl, result.vtUrl);
 
     // Block clicks on danger links
-    if (blockDangerLinks && result.status === "danger") {
-      const anchor = target.tagName === "A" ? target : target.closest("a");
-      if (anchor) {
-        // Remove from previous blocked link first
-        if (blockedLink && blockedLink !== anchor) {
-          blockedLink.removeEventListener("click", blockDangerClick, true);
-        }
-        anchor.addEventListener("click", blockDangerClick, true);
-        blockedLink = anchor;
-      }
+    if (result.status === "danger") {
+      attachBlocker(target);
     }
   }
 }

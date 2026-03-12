@@ -68,6 +68,10 @@ async function fetchVirusTotalScore(url, containerId, tipElement, currentStatus)
             "threat-magnifier-highlight-safe",
           );
           currentHoverTarget.classList.add("threat-magnifier-highlight-danger");
+
+          if (typeof attachBlocker === "function") {
+            attachBlocker(currentHoverTarget);
+          }
         }
       }
     } else if (suspicious > 0) {
